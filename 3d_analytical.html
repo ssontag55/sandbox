@@ -47,12 +47,13 @@
       "esri/symbols/IconSymbol3DLayer",
       "esri/symbols/PointSymbol3D",
       "esri/tasks/QueryTask",
+      "esri/widgets/Legend",
       "esri/tasks/support/Query",
       "esri/widgets/Home",
       "dojo/domReady!"
     ], function(Map, camera, GraphicsLayer,Graphic,Point, SceneView,FeatureLayer, CSVLayer,
       SimpleRenderer, SimpleMarkerSymbol, ObjectSymbol3DLayer,
-      IconSymbol3DLayer, PointSymbol3D, QueryTask, Query, Home
+      IconSymbol3DLayer, PointSymbol3D, QueryTask,Legend, Query, Home
     ) {
 
       var analyticalresults = "analyticalresults.csv";
@@ -93,13 +94,34 @@
       // Symbol size will vary depending on magnitude of the quake
       var surfaceRenderer = new SimpleRenderer({
         symbol: surfaceSym,
-        visualVariables: [{
+        visualVariables: [
+        {
+          type: "color",
+          field: "Result",
+          stops: [{
+              value: 250,
+              color: '#e0f3db'
+            }, 
+            {
+              value: 1000,
+              color: '#a8ddb5'
+            }, 
+            {
+              value: 3000,
+              color: '#43a2ca'
+            }, 
+            {
+              value: 5000,
+              color: '#253494'
+            }
+          ] 
+        },{
           type: "size",
           field: "Result",
           axis: "all",
           stops: [
           {
-            value: 200,
+            value: 250,
             size: 1
           },
           {
@@ -107,8 +129,12 @@
             size: 10
           },
           {
-            value: 2000,
+            value: 3000,
             size: 20
+          },
+          {
+            value: 5000,
+            size: 30
           }]
         }]
       });
@@ -132,9 +158,6 @@
         map: map,
         // Indicates to create a local scene
         viewingMode: "local",
-        // Use the exent defined in clippingArea to define the bounds of the scene
-        //clippingArea: kansasExtent,
-        //extent: kansasExtent,
         // Allows for navigating the camera below the surface
         constraints: {
           collision: {
@@ -159,6 +182,17 @@
 			  tilt: 60,
 			  zoom:15
 			});
+
+      var legend = new Legend({
+          view: view,
+          layerInfos: [{
+            layer: eqLayerSurface,
+            title: "Magnesium Values"
+          }]
+        });
+
+        // Add widget to the bottom right corner of the view
+        view.ui.add(legend, "bottom-right");
 
 		});
 
@@ -186,13 +220,13 @@
 
 		            outline: { // autocasts as new SimpleLineSymbol()
 		              color: [255, 255, 255],
-		              width: 2
+		              width: 1
 		            }
 		          });
 
 		        var pointGraphic = new Graphic({
 		          geometry: point,
-		          symbol: markerSymbol,
+              symbol: markerSymbol,
 		          attributes:graphic.attributes 
 		        });
 		        
