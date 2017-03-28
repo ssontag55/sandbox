@@ -4,13 +4,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-  <meta name="description" content="[Create a local scene - 4.3]">
+  <meta name="description" content="Analytical">
   <!-- 
   ArcGIS API for JavaScript, https://js.arcgis.com
   For more information about the scene-local sample, read the original sample description at developers.arcgis.com.
   https://developers.arcgis.com/javascript/latest/scene-local/index.html  
   -->
-  <title>3D Underground</title>
+  <title>3D Analytical Results</title>
   <style>
     html,
     body,
@@ -55,29 +55,13 @@
       IconSymbol3DLayer, PointSymbol3D, QueryTask, Query, Home
     ) {
 
-      //var quakesUrl = "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/ks_earthquakes_since_2000/FeatureServer/0";
-      var quakesUrl = "earthquake.csv";
+      var analyticalresults = "analyticalresults.csv";
 
-      // The clipping extent for the scene
-      var kansasExtent = { // autocasts as new Extent()
-        xmax: -10834217,
-        xmin: -10932882,
-        ymax: 4493918,
-        ymin: 4432667,
-        spatialReference: { // autocasts as new SpatialReference()
-          wkid: 3857
-        }
-      };
-
-      /********************************************************
-       * The popupTemplate that will populate the content of the
-       * popup when an earthquake feature is selected
-       *******************************************************/
-      var quakeTemplate = { // autocasts as new PopupTemplate()
-        title: "{place}",
-        content: "<b>Date and time:</b> {time}<br>" +
-          "<b>Magnitude (0-10): </b> {mag}<br>" +
-          "<b>Depth: </b> {depth} km<br>",
+      var popupTemplate = { 
+        title: "{Location}",
+        content: "<b>Date and time:</b> {SampleDate}<br>" +
+          "<b>Magnesium (mg/Kg): </b> {Result}<br>" +
+          "<b>Bottom Depth: </b> {BottomDepth} km<br>",
         fieldInfos: [{
           fieldName: "time",
           format: {
@@ -93,64 +77,11 @@
       var startDate = new Date("Thu Jul 25 2013 00:00:00 GMT-0700 (PDT)");
       var endDate = new Date("Mon Nov 09 2015 00:01:40 GMT-0800 (PST)");
 
-      /********************************************************
-       * Renderer for symbolizing earthquakes below the surface
-       *
-       * Earthquakes will be symbolized as spheres. The size of
-       * each will coincide with the magnitude of the earthquake,
-       * while the color will indicate the date at which the
-       * earthquake occured. The more white the color, the older the
-       * earthquake. The deeper the red, the more recent the
-       * earthquake occurred.
-       *******************************************************/
-
-      var quakesRenderer = new SimpleRenderer({
-        symbol: new PointSymbol3D({
-          symbolLayers: [new ObjectSymbol3DLayer({
-            resource: {
-              primitive: "sphere"
-            }//,
-            //material: { color: "red" }
-          })]
-        }),
-        visualVariables: [/*{
-          type: "color",
-          field: "time",
-          stops: [{
-              value: startDate.valueOf(),
-              color: "white"
-            }, // From mid-2013
-            {
-              value: endDate.valueOf(),
-              color: "red"
-            }
-          ] // to Nov. 2015
-        },*/ {
-          type: "size",
-          field: "mag",
-          axis: "all",
-          stops: [
-          {
-            value: 2,
-            size: 100
-          },
-          {
-            value: 5,
-            size: 2000
-          }]
-        }]
-      });
-
-      /********************************************************
-       * Renderer for symbolizing earthquakes on the surface
-       *******************************************************/
-
-      // Quakes will be symbolized as circles
       var surfaceSym = new PointSymbol3D({
         symbolLayers: [
           new IconSymbol3DLayer({
             material: {
-              color: [179, 75, 75]
+              color: [144, 195, 212]
             },
             resource: {
               primitive: "circle"
@@ -160,82 +91,42 @@
       });
 
       // Symbol size will vary depending on magnitude of the quake
-      var quakesSurfaceRenderer = new SimpleRenderer({
+      var surfaceRenderer = new SimpleRenderer({
         symbol: surfaceSym,
         visualVariables: [{
           type: "size",
-          field: "mag",
+          field: "Result",
           axis: "all",
           stops: [
           {
-            value: 2,
-            size: 3
+            value: 200,
+            size: 1
           },
           {
-            value: 5,
-            size: 50
+            value: 1000,
+            size: 10
+          },
+          {
+            value: 2000,
+            size: 20
           }]
         }]
       });
 
 
-      /********************************************************
-       * Create earthquakes layers (one on the surface and one
-       * below the surface to show actual location).
-       ******************************************************
-
-      // Defines a layer for drawing the exact location of quakes below the surface
-      var quakesDepthLyr = new FeatureLayer({
-        url: quakesUrl,
-        // Show only quakes of magnitude 2.0 or higher
-        definitionExpression: "mag >= 2",
-        outFields: ["*"],
-        renderer: quakesRenderer,
-        popupTemplate: quakeTemplate,
-        returnZ: true,
-        elevationInfo: {
-          mode: "absolute-height"
-        }
-      });*/
-
 	 //Surface
-      var eqLayerSurface = new CSVLayer({
-		  url: quakesUrl,
-		  renderer: quakesSurfaceRenderer,
-		  popupTemplate: quakeTemplate
+   var eqLayerSurface = new CSVLayer({
+		  url: analyticalresults,
+		  renderer: surfaceRenderer,
+		  popupTemplate: popupTemplate
 		});
 
-	 //SubSurface does seem to use the z level
-      /*var eqLayerDepth = new CSVLayer({
-		  url: quakesUrl,
-		  //definitionExpression: "mag >= 2",
-          //outFields: ["*"],
-		  renderer: quakesSurfaceRenderer,//quakesRenderer,
-	        popupTemplate: quakeTemplate,
-	        returnZ: true,
-	        elevationInfo: {
-	          mode: "relative-to-ground",
-	          offset: 10000
-	        }
-		});*/
-      
       var map = new Map({
         basemap: "hybrid",
         ground: "world-elevation",
         layers: [eqLayerSurface]//,quakesDepthLyr, quakesSurfaceLyr]
       });
 
-      /********************************************************************
-       * Create a local scene in south central Kansas
-       *
-       * To create a local scene, you must set the viewingMode to "local".
-       * To define a small, localized area for the view, set
-       * the clippingArea property.
-       *
-       * Assign the map to a SceneView. Disabling the collision property of
-       * the constraints will allow the user to navigate the view's camera
-       * below the surface.
-       ********************************************************************/
       var view = new SceneView({
         container: "viewDiv",
         map: map,
@@ -260,27 +151,20 @@
         }
       });
 
-      /*view.center = new Point({
-		  x: -10923627.32351792,
-		  y: 4426271.5760627035,
-		  z: -100,
-
-		  spatialReference: 3857
-		});*/
 	  view.then(function() {
 		   	view.goTo({
 			  //target: view.graphics,
-			  target: [-65.42431739854104, 18.00095558133976],
+			  target: [-91.18113445, 30.455],
 			  heading: 0,
 			  tilt: 60,
-			  zoom:9
+			  zoom:15
 			});
 
 		});
 
 	  eqLayerSurface.then(function(e) {
 
-	  	  var quakesArray = [];
+	  	  var resultArray = [];
 	  	  var layerFields = e.fields;
 	  	  
 	  	  var graphicsLayer;
@@ -289,12 +173,12 @@
 				
 				var px = graphic.geometry.x;
 				var py = graphic.geometry.y;
-				var pz = Number(graphic.attributes['depth']);
+				var pz = Number(graphic.attributes['BottomDepth']);
     			
     			var point = new Point({
 		            x: px,
 		            y: py,
-		            z: pz*-200 //exagerate 
+		            z: pz*-10 //exagerate 
 		          }),
 
 		          markerSymbol = new SimpleMarkerSymbol({
@@ -312,7 +196,7 @@
 		          attributes:graphic.attributes 
 		        });
 		        
-		        quakesArray.push(pointGraphic);
+		        resultArray.push(pointGraphic);
 
 		       //graphicsLayer.add(pointGraphic);
 		    });
@@ -320,15 +204,15 @@
 		  //an alternative method for adding graphics but it doesn't honor popups templates
 		  //map.add(graphicsLayer);
 
-		  var quakesDepthLyr = new FeatureLayer({
-		        source: quakesArray,
+		  var resultDepthLyr = new FeatureLayer({
+		        source: resultArray,
 		        // Show only quakes of magnitude 2.0 or higher
-		        definitionExpression: "mag >= 2",
+		        //definitionExpression: "mag >= 2",
 		        outFields: ["*"],
 		        fields: layerFields,
 		        //renderer: quakesRenderer,
 		        objectIdField: "__OBJECTID",
-		        popupTemplate: quakeTemplate,
+		        popupTemplate: popupTemplate,
 		        returnZ: true,
 		        spatialReference: {
 		            wkid: 4326
@@ -339,16 +223,16 @@
 		          //offset:100 //exagerate depth
 		        }
 		  });
-		 map.add(quakesDepthLyr);
+		 map.add(resultDepthLyr);
 	  });
 
 
 	  //click listener  
-      view.on("click", function(event) {
-		 var screenPoint = {
-		  x: event.x,
-		  y: event.y
-		 };
+    view.on("click", function(event) {
+  		 var screenPoint = {
+  		  x: event.x,
+  		  y: event.y
+  		 };
 		  // Search for graphics at the clicked location
 		  view.hitTest(screenPoint).then(function(response) {
 		    var result = response.results[0];
