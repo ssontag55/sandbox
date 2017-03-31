@@ -56,6 +56,7 @@
       IconSymbol3DLayer, PointSymbol3D, QueryTask,Legend, Query, Home
     ) {
 
+      //analyticalresults  JSON
       var analyticalresults = "analyticalresults.csv";
 
       var popupTemplate = { 
@@ -139,70 +140,73 @@
         }]
       });
 
-
-	 //Surface
-   var eqLayerSurface = new CSVLayer({
-		  url: analyticalresults,
-		  renderer: surfaceRenderer,
-		  popupTemplate: popupTemplate
-		});
-
-      var map = new Map({
-        basemap: "hybrid",
-        ground: "world-elevation",
-        layers: [eqLayerSurface]//,quakesDepthLyr, quakesSurfaceLyr]
-      });
-
-      var view = new SceneView({
-        container: "viewDiv",
-        map: map,
-        // Indicates to create a local scene
-        viewingMode: "local",
-        // Allows for navigating the camera below the surface
-        constraints: {
-          collision: {
-            enabled: false
-          },
-          tilt: {
-            max: 179.99
-          }
-        },
-        // Turns off atmosphere and stars settings
-        environment: {
-          atmosphere: null,
-          starsEnabled: true
-        }
-      });
-
-	  view.then(function() {
-		   	view.goTo({
-			  //target: view.graphics,
-			  target: [-91.18113445, 30.455],
-			  heading: 0,
-			  tilt: 60,
-			  zoom:15
-			});
-
-      var legend = new Legend({
-          view: view,
-          layerInfos: [{
-            layer: eqLayerSurface,
-            title: "Magnesium Values"
-          }]
+        var map = new Map({
+          basemap: "hybrid",
+          ground: "world-elevation",
+          layers: [eqLayerSurface]//,quakesDepthLyr, quakesSurfaceLyr]
         });
+
+        var view = new SceneView({
+          container: "viewDiv",
+          map: map,
+          // Indicates to create a local scene
+          viewingMode: "local",
+          // Allows for navigating the camera below the surface
+          constraints: {
+            collision: {
+              enabled: false
+            },
+            tilt: {
+              max: 179.99
+            }
+          },
+          // Turns off atmosphere and stars settings
+          environment: {
+            atmosphere: null,
+            starsEnabled: true
+          }
+        });
+
+    	  view.then(function() {
+    		   	view.goTo({
+    			  //target: view.graphics,
+    			  target: [-91.18113445, 30.455],
+    			  heading: 0,
+    			  tilt: 60,
+    			  zoom:15
+    		});
+
+        var legend = new Legend({
+            view: view,
+            layerInfos: [{
+              layer: eqLayerSurface,
+              title: "Magnesium Values"
+            }]
+          });
 
         // Add widget to the bottom right corner of the view
         view.ui.add(legend, "bottom-right");
 
 		});
 
+        
+   //Surface
+   var eqLayerSurface = new CSVLayer({
+      url: analyticalresults,
+      renderer: surfaceRenderer,
+      popupTemplate: popupTemplate
+    });
+
 	  eqLayerSurface.then(function(e) {
 
-	  	  var resultArray = [];
-	  	  var layerFields = e.fields;
+	  	var resultArray = [];
+	  	var layerFields = e.fields;
 	  	  
-	  	  var graphicsLayer;
+	  	var graphicsLayer;
 
+
+      //This is where we would iteratate through JSON
+      //analyticalresults
 		  dojo.forEach(e.source._featureSetJSON.features,function(graphic){ 
 				
 				var px = graphic.geometry.x;
@@ -226,31 +230,80 @@
 
 		        var pointGraphic = new Graphic({
 		          geometry: point,
-              symbol: markerSymbol,
+              //symbol: markerSymbol,
 		          attributes:graphic.attributes 
 		        });
 		        
 		        resultArray.push(pointGraphic);
 
 		       //graphicsLayer.add(pointGraphic);
-		    });
+		  });
+
+      /**************************************************
+       * Renderer for symbolizing data below the surface
+       **************************************************/
+      var resultDepthRenderer = new SimpleRenderer({
+        symbol: new PointSymbol3D({
+          symbolLayers: [new ObjectSymbol3DLayer({
+            resource: {
+              primitive: "cylinder"
+            },
+            width: 50
+          })]
+        }),
+        visualVariables: [{
+          type: "size",
+          field: "BottomDepth",
+          axis: "height",
+          stops: [
+          {
+            value: 0,
+            size: 0
+          },
+          {
+            value: 40,
+            size: -2048
+          }]
+        }, {
+          type: "size",
+          axis: "width",
+          useSymbolValue: true // sets the width to 50m
+        }, {
+          type: "color",
+          field: "Result",
+          stops: [{
+              value: 250,
+              color: '#e0f3db'
+            }, 
+            {
+              value: 1000,
+              color: '#a8ddb5'
+            }, 
+            {
+              value: 3000,
+              color: '#43a2ca'
+            }, 
+            {
+              value: 5000,
+              color: '#253494'
+            }]
+        }]
+      });
 
 		  //an alternative method for adding graphics but it doesn't honor popups templates
 		  //map.add(graphicsLayer);
-
 		  var resultDepthLyr = new FeatureLayer({
 		        source: resultArray,
-		        // Show only quakes of magnitude 2.0 or higher
-		        //definitionExpression: "mag >= 2",
+		        //definitionExpression: "Result >= 2",
 		        outFields: ["*"],
 		        fields: layerFields,
-		        //renderer: quakesRenderer,
+		        renderer: resultDepthRenderer,
 		        objectIdField: "__OBJECTID",
 		        popupTemplate: popupTemplate,
 		        returnZ: true,
 		        spatialReference: {
 		            wkid: 4326
-		          },
+		        },
 		        geometryType: "point",
 		        elevationInfo: {
 		          mode: "absolute-height"
@@ -280,10 +333,10 @@
 		  });
 		});
 
-      // Set up a home button for resetting the viewpoint to the intial extent
-      var homeBtn = new Home({
-        view: view
-      }, "homeDiv");
+    // Set up a home button for resetting the viewpoint to the intial extent
+    var homeBtn = new Home({
+      view: view
+    }, "homeDiv");
 
 
       /* add popup event button - not used now
@@ -303,11 +356,10 @@
           return;
         }
       });*/
-    });
+  });
 
   </script>
 </head>
-
 <body>
   <div id="viewDiv"></div>
   <div id="homeDiv"></div>
