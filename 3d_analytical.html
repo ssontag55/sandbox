@@ -26,6 +26,15 @@
       z-index: 35;
       position: absolute;
     }
+
+    #sizeInputDiv {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 12px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+    }
   </style>
 
   <link rel="stylesheet" href="https://js.arcgis.com/4.3/esri/css/main.css">
@@ -33,6 +42,9 @@
 
   <script>
     require([
+      "dojo/dom",
+      "dojo/on",
+      "esri/widgets/BasemapToggle",
       "esri/Map",
       "esri/Camera",
       "esri/layers/GraphicsLayer",
@@ -50,11 +62,15 @@
       "esri/widgets/Legend",
       "esri/tasks/support/Query",
       "esri/widgets/Home",
+      "dojo/dom-construct",
+      "dijit/form/CheckBox",
       "dojo/domReady!"
-    ], function(Map, camera, GraphicsLayer,Graphic,Point, SceneView,FeatureLayer, CSVLayer,
+    ], function(dom,on,BasemapToggle,Map, camera, GraphicsLayer,Graphic,Point, SceneView,FeatureLayer, CSVLayer,
       SimpleRenderer, SimpleMarkerSymbol, ObjectSymbol3DLayer,
-      IconSymbol3DLayer, PointSymbol3D, QueryTask,Legend, Query, Home
+      IconSymbol3DLayer, PointSymbol3D, QueryTask,Legend, Query,Home, domConstruct, CheckBox
     ) {
+
+          me = this;
 
           //analyticalresults  JSON
           var analyticalresults = "analyticalresults.csv";
@@ -63,7 +79,7 @@
             title: "{Location}",
             content: "<b>Date and time:</b> {SampleDate}<br>" +
               "<b>Magnesium (mg/Kg): </b> {Result}<br>" +
-              "<b>Bottom Depth: </b> {BottomDepth} km<br>",
+              "<b>Bottom Depth: </b> {BottomDepth} meters<br>",
             fieldInfos: [{
               fieldName: "time",
               format: {
@@ -75,9 +91,6 @@
               title: "Nearby wells"
             }*/]
           };
-
-          var startDate = new Date("Thu Jul 25 2013 00:00:00 GMT-0700 (PDT)");
-          var endDate = new Date("Mon Nov 09 2015 00:01:40 GMT-0800 (PST)");
 
           var surfaceSym = new PointSymbol3D({
             symbolLayers: [
@@ -193,7 +206,6 @@
 
         // Add widget to the bottom right corner of the view
         view.ui.add(legend, "bottom-right");
-
 		});
 
 
@@ -247,6 +259,72 @@
           symbolLayers: [new ObjectSymbol3DLayer({
             resource: {
               primitive: "cylinder"
+            }
+            //width: 50
+          })]
+        }),
+        visualVariables: [{
+          type: "size",
+          field: "BottomDepth",
+          axis: "height",
+          stops: [
+          {
+            value: 0,
+            size: 0
+          },
+          {
+            value: 40,
+            size: -2048
+          }]
+        }, {
+          type: "size",
+          axis: "width",
+          field: "Result",
+          stops: [{
+              value: 400,
+              size: 10
+            }, 
+            {
+              value: 1200,
+              size: 60
+            }, 
+            {
+              value: 3000,
+              size: 90
+            }, 
+            {
+              value: 5000,
+              size: 150
+            }],
+          useSymbolValue: false // sets the width to 50m
+        }, {
+          type: "color",
+          field: "Result",
+          stops: [{
+              value: 250,
+              color: '#e0f3db'
+            }, 
+            {
+              value: 1000,
+              color: '#a8ddb5'
+            }, 
+            {
+              value: 3000,
+              color: '#43a2ca'
+            }, 
+            {
+              value: 5000,
+              color: '#253494'
+            }]
+        }]
+      });
+
+
+      var resultDepthRendererNoWidth = new SimpleRenderer({
+        symbol: new PointSymbol3D({
+          symbolLayers: [new ObjectSymbol3DLayer({
+            resource: {
+              primitive: "cylinder"
             },
             width: 50
           })]
@@ -289,7 +367,8 @@
             }]
         }]
       });
-
+      me.resultDepthRendererNoWidth = resultDepthRendererNoWidth;
+      me.resultDepthRenderer = resultDepthRenderer;
 		  //an alternative method for adding graphics but it doesn't honor popups templates
 		  //map.add(graphicsLayer);
 		  var resultDepthLyr = new FeatureLayer({
@@ -310,6 +389,7 @@
 		          //offset:100 //exagerate depth
 		        }
 		  });
+     me.resultDepthLyr = resultDepthLyr;
 		 map.add(resultDepthLyr);
 	  });
 
@@ -338,6 +418,29 @@
       view: view
     }, "homeDiv");
 
+    var toggleB = new BasemapToggle({
+        //map: map,
+        view: view,
+        basemap: "topo",
+        nextBasemap: "topo" 
+      }, "BasemapToggle");
+    view.ui.add(toggleB, "bottom-left");
+
+    on(dom.byId("sizeInput"), "change", updateSize);
+
+      function updateSize(ev) {
+        // adjust size for bins
+        map.ground.layers.forEach(function(layer) {
+          //layer.visible = ev.target.checked;
+
+          if(ev.target.checked){
+              me.resultDepthLyr.renderer = me.resultDepthRenderer;
+          }
+          else{
+              me.resultDepthLyr.renderer = me.resultDepthRendererNoWidth;
+          }
+        });
+      }
 
       /* add popup event button - not used now
       view.popup.on("trigger-action", function(event) {
@@ -361,7 +464,15 @@
   </script>
 </head>
 <body>
-  <div id="viewDiv"></div>
-  <div id="homeDiv"></div>
+  <div id="viewDiv">
+  </div>
+  <div id="homeDiv">
+  </div>
+  <div id="BasemapToggle"></div>
+  <div id="sizeInputDiv">
+    <label>Size based on Result Value:
+      <input id="sizeInput" type="checkbox" checked="yes">
+    </label>
+  </div>
 </body>
 </html>
