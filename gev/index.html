@@ -1,0 +1,1000 @@
+<!--
+  Copyright 1995-2017 Esri
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+  For additional information, contact:
+  Environmental Systems Research Institute, Inc.
+  Attn: Contracts Dept
+  380 New York Street
+  Redlands, California, USA 92373
+
+  email: contracts@esri.com
+-->
+
+<!DOCTYPE html>
+
+<html>
+
+<head lang="en">
+  <meta charset="UTF-8">
+
+  <title>Aggregation Viewer - Server Side Dynamic Map Service Layer</title>
+
+  <link rel="stylesheet" href="https://js.arcgis.com/3.19/esri/css/esri.css">
+  <link rel="stylesheet" href="./mapServiceViewerStyles.css">
+
+  <script type="text/javascript">
+    var package_path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+    var dojoConfig = {
+      parseOnLoad: true,
+      packages: [{
+        name: "app",
+        location: package_path + "/js"
+      }]
+    };
+  </script>
+  <script src="https://js.arcgis.com/3.19/"></script>
+  <script src="https://use.fontawesome.com/9482a0b1d1.js"></script>
+  <script>
+    require([
+      "dojo/parser",
+      "dojo/dom",
+      "dojo/dom-style",
+      "dojo/dom-class",
+      "dojo/on",
+      "dojo/json",
+      "dojo/_base/array",
+      "esri/Color",
+      "dijit/registry",
+      "dijit/form/NumberSpinner",
+
+      "esri/map",
+      "esri/SpatialReference",
+      "esri/geometry/Extent",
+      "esri/tasks/GeometryService",
+      "esri/layers/GraphicsLayer",
+
+      "esri/layers/ArcGISDynamicMapServiceLayer",
+      "esri/layers/ArcGISTiledMapServiceLayer",
+      "esri/layers/LayerDrawingOptions",
+
+      "esri/symbols/SimpleLineSymbol",
+      "esri/symbols/SimpleFillSymbol",
+      "esri/renderers/SimpleRenderer",
+      "esri/geometry/Polygon",
+      "esri/graphic",
+      "esri/geometry/Point",
+      "esri/symbols/SimpleMarkerSymbol",
+
+      "esri/tasks/query",
+      "esri/tasks/QueryTask",
+      "esri/geometry/webMercatorUtils",
+
+      "esri/renderers/HeatmapRenderer",
+      "esri/renderers/smartMapping",
+      "dijit/TooltipDialog",
+      "esri/request",
+      "dojo/_base/json",
+      "esri/arcgis/utils",
+      "esri/lang",
+
+      "esri/layers/FeatureLayer",
+      "esri/dijit/BasemapGallery",
+      "app/aggregationRenderer",
+
+      "dijit/TitlePane",
+      "dijit/form/Select",
+      "dijit/layout/BorderContainer",
+      "dijit/layout/ContentPane",
+      "dijit/form/RadioButton",
+      "dijit/form/ComboBox",
+      "dijit/form/Button",
+      "dijit/form/CheckBox",
+      "dijit/TooltipDialog",
+      "dijit/form/DropDownButton",
+
+      "dijit/form/FilteringSelect",
+      "dojo/data/ItemFileReadStore",
+
+      "dojo/query!css2",
+      "dojo/domReady!"
+    ], function (
+      parser, dom, domStyle, domClass, on, JSON, arr, Color, registry, NumberSpinner,
+      Map, SpatialReference, Extent, GeometryService, GraphicsLayer,
+      ArcGISDynamicMapServiceLayer, ArcGISTiledMapServiceLayer, LayerDrawingOptions,
+      SimpleLineSymbol, SimpleFillSymbol, SimpleRenderer, Polygon, Graphic, Point, SimpleMarkerSymbol,
+      Query, QueryTask, webMercatorUtils,
+      HeatmapRenderer, smartMapping, TooltipDialog, esriRequest, dojoJson, arcgisUtils, esriLang,
+      FeatureLayer, BasemapGallery, AggregationRenderer,
+      TitlePane, Select, BorderContainer, ContentPane, RadioButton, ComboBox, Button, CheckBox, TooltipDialog, DropDownButton,
+      FilteringSelect, ItemFileReadStore ) {
+
+      parser.parse();
+
+      // class data members
+      var _map = null;
+      var _mapExtent;
+      var _defaultWkid = 102100;
+      var _wkid = 102100;
+      var _aggMapServiceUrl;
+
+      var _refreshRateSpinner;
+      var _msLayer;
+      var _msLayerName = "MapService1";
+      var _msLayerFields;
+      var _changeTimer;
+      var _allowRefreshLayer = true;
+
+      var _gs = new GeometryService("http://sampleserver6.arcgisonline.com/arcgis/rest/services/Utilities/Geometry/GeometryServer");
+
+      _mapExtent = new Extent({
+        // http://help.arcgis.com/en/webapps/flexviewer/extenthelper/flexviewer_extenthelper.html
+        "xmin": -31641260.73269701,
+        "ymin": -21485531.406618062,
+        "xmax": 31758668.008143142,
+        "ymax": 20389730.169122037,
+        "spatialReference": {"wkid": _defaultWkid}
+      });
+
+      dom.byId("wkid").value = _mapExtent.spatialReference.wkid;
+      on(dom.byId("wkid"), "change", projectExtent);
+
+      on(dom.byId("controls"), on.selector(".config-header", "click"), function(e) {
+        if (e.target.type !== "checkbox") {
+          var sectionWrapper = e.selectorTarget.parentNode;
+
+          domClass.toggle(sectionWrapper, "section-hidden");
+        }
+      });
+
+      buildMap(_mapExtent, true);
+      initRefreshRateSpinner();
+      populateFilteringSelectFonts("labelFont");
+
+
+      function buildMap(mapExtent, tiled) {
+
+        esri.config.defaults.io.corsEnabledServers.push('http://arc01.asascience.com');
+        esri.config.defaults.io.corsEnabledServers.push('http://arc01.asascience.com');
+
+        if (_map) {
+          // kill the map, if it already exists
+          _map.removeAllLayers();
+          _map.destroy();
+          _map = null;
+          //console.log("destroyed previous map instance");
+        }
+        _mapExtent = mapExtent || _mapExtent;
+        _map = new Map("map", {
+          wrapAround180: true,
+          extent: _mapExtent,
+          showAttribution: false,
+          sliderStyle: "small"
+        });
+
+        /*
+        var basemapGallery = new BasemapGallery({
+          showArcGISBasemaps: true,
+          map: _map
+        }, "basemapGallery");
+        basemapGallery.startup();
+        */
+
+        //console.log("map extent wkid: ", _map.extent.spatialReference.wkid);
+
+        // uncomment the following section if you want to add feature layers on top of the base map
+        /*
+         // USA
+         var layer = new FeatureLayer("https://sampleserver6.arcgisonline.com/arcgis/rest/services/Census/MapServer/3");
+
+         // other layers to use - world regions:
+         var layer = new FeatureLayer("https://sampleserver6.arcgisonline.com/arcgis/rest/services/WorldTimeZones/MapServer/2");
+
+         // countries:
+         var layer = new FeatureLayer("https://wwtw.esriuk.com/ArcGIS/rest/services/CG/WorldCountries/MapServer/0");
+
+         var outline = new SimpleLineSymbol("solid", new Color([255, 255, 255, 1]), 1);
+         var fill = new SimpleFillSymbol("solid", outline, new Color([64, 64, 64, 0.15]));
+         layer.setRenderer(new SimpleRenderer(fill));
+         _map.addLayer(layer);
+
+         _map.on("layer-add-result", function (evt) {
+         //console.log("layer-add-result: ", evt);
+         });
+         */
+
+        // you can choose different base maps as reference but has to use it as dynamic map service layer
+        //TODO - replace this with a custom UI synamic map service basemap layer widget
+        var worldReferenceUrl_Topo = "http://services.arcgisonline.com/arcgis/rest/services/World_Topo_Map/MapServer";
+        var worldReferenceUrl_Gray = "https://services.arcgisonline.com/arcgis/rest/services/Canvas/World_Light_Gray_Base/MapServer";
+        var worldReferenceUrl = worldReferenceUrl_Gray;
+        if (tiled) {
+          var worldReference = new ArcGISTiledMapServiceLayer(worldReferenceUrl);
+          _map.addLayers([worldReference]);
+        } else {
+          var worldReference = new ArcGISDynamicMapServiceLayer(worldReferenceUrl, {
+            "showAttribution": false,
+            "opacity": 1.0
+          });
+          _map.addLayers([worldReference]);
+        }
+
+        // Map event listeners
+        _map.on("load", setLayer);
+
+        _map.on("zoom-end", function (evt) {
+          //console.log("map zoom to: " + evt);
+        });
+
+        dojo.byId("currentMapSR").value = _wkid;
+      }
+
+      function projectExtent(val) {
+        //console.log("project extent val: ", val, typeof val);
+        //console.log(_map);
+        //console.log(val.target.value);
+
+        _wkid = parseInt(val.target.value, 10);
+        if (_wkid === _map.spatialReference.wkid) {
+          // no need to project
+          return;
+        }
+
+        // _wkid changed, project the map's current extent
+        var sr = new SpatialReference(_wkid);
+        var project = _gs.project([_map.extent], sr);
+        project.then(success, failure);
+      }
+
+      function success(result) {
+        //console.log("project successful: ", result);
+        if (result.length) {
+          var bounds = result[0];
+          buildMap(bounds, false);
+          dojo.byId("currentMapSR").value = _wkid;
+        } else {
+          console.log("Project was successful, but no results were returned.");
+        }
+      }
+
+      function failure(err) {
+        console.log("Project failed:  ", err);
+      }
+
+      //The Measurement Widget require a proxy page to handle communications with the ArcGIS Server services. You will need to
+      //replace the url below with the location of a proxy on your machine. See the 'Using the proxy page' help topic
+      //for details on setting up a proxy page.
+      esriConfig.defaults.io.proxyUrl = "/proxy/";
+      esriConfig.defaults.io.alwaysUseProxy = false;
+
+      // UI event listeners
+      on(dom.byId("applyRendererButton"), "click", requestToUpdateLayerFromUI);
+      on(dom.byId("setLayerButton"), "click", setLayer);
+
+      var inputs = document.getElementsByTagName("input");
+      for (var i = 0; i < inputs.length; i++) {
+        var input = inputs[i];
+        if ("setLayerButton" != input.id)
+          on(input, "change", requestToUpdateLayerFromUI);
+      }
+
+      var selects = document.getElementsByTagName("select");
+      for (var i = 0; i < selects.length; i++) {
+        var select = selects[i];
+        on(select, "change", requestToUpdateLayerFromUI);
+      }
+
+      on(dom.byId("style"), "change", uiTrigger);
+      on(dom.byId("useStats"), "change", uiTrigger);
+      on(dom.byId("useRotation"), "change", uiTrigger);
+      on(dom.byId("renderLabels"), "change", uiTrigger);
+
+      on(dijit.byId("labelFont"), "change", requestToUpdateLayerFromUI);
+      on(dijit.byId("statField"), "change", statFieldChanged);
+      on(dijit.byId("statType"), "change", requestToUpdateLayerFromUI);
+
+      on(document.getElementsByClassName("collapser")[0], "click", togglePanel);
+
+
+      function togglePanel() {
+        domClass.toggle(document.getElementsByTagName("body")[0], "panel-collapsed");
+      }
+
+      // Layer related functions
+
+      function setLayer() {
+        var msLayer = _map.getLayer(_msLayerName);
+        if (msLayer) {
+          _map.removeLayer(msLayer);
+        }
+
+        var url = dojo.byId("inputUrl").value;
+        var options = {
+          id: _msLayerName,
+          showAttribution: true,
+          refreshInterval: 0
+        };
+
+        _msLayer = new ArcGISDynamicMapServiceLayer(url, options);
+
+        _msLayer.on("load", function (evt) {
+          //dojo.byId("setLayerButton").setAttribute('disabled', true);
+          if (evt.layer.version == "10.4") {
+            dojo.byId("geoHashStyle").disabled = true;
+            dojo.byId("labelFormat").value = "#.##"
+          } else {
+            dojo.byId("geoHashStyle").disabled = false;
+            dojo.byId("labelFormat").value = "###.#KMB"
+          }
+        });
+
+        _msLayer.on("error", function (err) {
+          //console.log("Error occured loading the " + err.target.id + " error: " + err.error.message);
+          //console.log("Invalid layer URL: " + err.target.url);
+          //dojo.byId("inputUrl").style.backgroundColor = "#ff0000";
+        });
+
+        _map.addLayer(_msLayer);
+        //console.log("msLayer added");
+        dojo.byId("inputUrl").style.backgroundColor = "#00ff00";
+        // dojo.byId("applyRendererButton").style.visibility = "block";
+        var sections = document.getElementsByTagName("section");
+        for (var i = 0; i < sections.length; i++) {
+          var section = sections[i];
+          domStyle.set(section, "display", "block");
+        }
+        _aggMapServiceUrl = url;
+
+        updateLayerFields();
+      }
+
+      function requestToUpdateLayerFromUI() {
+        // postpone invoking updateLayerFromUI() for at least one second
+        // to accumulate multiple requests to update the layer
+        if (!_allowRefreshLayer)
+          return;
+        if (_changeTimer)
+          window.clearTimeout(_changeTimer);
+
+        _changeTimer = window.setTimeout(updateLayerFromUI, 1000);
+      }
+
+      function updateLayerFromUI() {
+        if (!_allowRefreshLayer)
+          return;
+
+        _msLayer = _map.getLayer(_msLayerName); // this is a dynamicMapServiceLayer
+
+        var renderer = new AggregationRenderer();
+        updateRendererFromUI(renderer);
+
+        var drawingOptions = new LayerDrawingOptions();
+        drawingOptions.renderer = renderer;
+        //drawingOptions.transparency = 50;
+        var layerDrawingOptions = [];
+        layerDrawingOptions[0] = drawingOptions;
+        _msLayer.setLayerDrawingOptions(layerDrawingOptions);
+        _msLayer._updateDynamicLayers();
+        _msLayer.refresh(true);
+      }
+
+      function updateRendererFromUI(renderer) {
+
+        var geoHashStyle = {
+          style: dojo.byId("geoHashStyle").value,
+          sr: dojo.byId("geoHashStyleSR").value
+        };
+
+        var binRenderer = {
+          type: "Continuous",
+          minColor: hexToRgb(dojo.byId("minColor").value, parseFloat(dojo.byId("minColorA").value)),
+          maxColor: hexToRgb(dojo.byId("maxColor").value, parseFloat(dojo.byId("maxColorA").value)),
+          minOutlineColor: hexToRgb(dojo.byId("minOutlineColor").value, parseFloat(dojo.byId("minOutlineColorA").value)),
+          maxOutlineColor: hexToRgb(dojo.byId("maxOutlineColor").value, parseFloat(dojo.byId("maxOutlineColorA").value)),
+          minOutlineWidth: parseFloat(dojo.byId("minOutlineWidth").value),
+          maxOutlineWidth: parseFloat(dojo.byId("maxOutlineWidth").value),
+          minValue: parseFloat(dojo.byId("minValue").value),
+          maxValue: parseFloat(dojo.byId("maxValue").value),
+          minSize: parseFloat(dojo.byId("minSize").value),
+          maxSize: parseFloat(dojo.byId("maxSize").value),
+          normalizeByBinArea: (dojo.byId("normalizeByBinArea")).checked
+        };
+
+        var labels = {
+          color: hexToRgb(dojo.byId("labelColor").value, parseFloat(dojo.byId("labelColorA").value)),
+          font: dijit.byId("labelFont").get('displayedValue'),
+          size: parseFloat(dojo.byId("labelSize").value),
+          style: dojo.byId("labelStyle").value,
+          format: dojo.byId("labelFormat").value
+        };
+
+        var useRotation = (dojo.byId("useRotation").checked == true);
+
+        var featureRenderer = {
+          "type": "simple",
+          symbol: {
+            type: "esriSMS",
+            style: dojo.byId("Fstyle").value,
+            color: hexToRgb(dojo.byId("Fcolor").value, parseFloat(dojo.byId("FcolorA").value)),
+            size: parseFloat(dojo.byId("Fsize").value),
+            angle: 0,
+            xoffset: 0,
+            yoffset: 0,
+            outline: {
+              color: hexToRgb(dojo.byId("Foutline").value, parseFloat(dojo.byId("FoutlineA").value)),
+              width: parseFloat(dojo.byId("FoutlineW").value)
+            }
+          },
+          "label": "",
+          "description": "",
+          "rotationType": useRotation ? dojo.byId("rotationType").value : "",
+          "rotationExpression": useRotation ? dojo.byId("rotationExpression").value : ""
+        };
+
+        var fieldStatistic = {
+          "fieldName": dijit.byId("statField").value,
+          "statisticType": dijit.byId("statType").value
+        };
+
+        renderer.setStyle(dojo.byId("style").value);
+        renderer.setLodOffset(parseFloat(dojo.byId("lodOffset").value));
+        renderer.setFeatureThreshold(parseFloat(dojo.byId("featureThreshold").value));
+        renderer.setMinBinSizeInPixels(parseFloat(dojo.byId("minBinSizeInPixels").value));
+        renderer.setFullLodGrid((dojo.byId("fullLodGrid")).checked);
+
+        renderer.setBinRenderer(binRenderer);
+        renderer.setGeoHashStyle(geoHashStyle);
+        renderer.setFeatureRenderer(featureRenderer);
+
+        if (dojo.byId("renderLabels").checked == true) {
+          renderer.setLabels(labels);
+        } else {
+          renderer.setLabels(null);
+        }
+
+        if (dojo.byId("useStats").checked == true) {
+          renderer.setFieldStatistic(fieldStatistic);
+        } else {
+          renderer.setFieldStatistic(null);
+        }
+
+      }
+
+      function hexToRgb(hex, a) {
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        var r = parseInt(result[1], 16);
+        var g = parseInt(result[2], 16);
+        var b = parseInt(result[3], 16);
+        return [r, g, b, a];
+      }
+
+      function uiTrigger(evt) {
+        if (evt.target.id == "style") {
+          if (evt.target.value == "Oval") {
+            domStyle.set(dom.byId("ovalAttrSection"), "display", 'flex');
+          } else {
+            domStyle.set(dom.byId("ovalAttrSection"), "display", 'none');
+          }
+        } else if (evt.target.id == "useStats") {
+          if (dojo.byId("useStats").checked == true) {
+            dojo.byId("statField").style.display = "block";
+            dojo.byId("statType").style.display = "block";
+          } else {
+            dojo.byId("statField").style.display = "none";
+            dojo.byId("statType").style.display = "none";
+          }
+        } else if (evt.target.id == "useRotation") {
+          if (dojo.byId("useRotation").checked == true) {
+            dojo.byId("rotationExpression").style.display = "block";
+            dojo.byId("rotationType").style.display = "block";
+          } else {
+            dojo.byId("rotationExpression").style.display = "none";
+            dojo.byId("rotationType").style.display = "none";
+          }
+        } else if (evt.target.id == "renderLabels") {
+          if (dojo.byId("renderLabels").checked == true) {
+            dojo.byId("aggLabelsSection").style.display = "block";
+          } else {
+            dojo.byId("aggLabelsSection").style.display = "none";
+          }
+        }
+      }
+
+      function statFieldChanged(val) {
+       var control = dijit.byId('statField');
+        var selectedOption = control.getOptions(val);
+        populateStatTypeSelectOptions(selectedOption);
+        requestToUpdateLayerFromUI();
+      }
+
+      function populateStatTypeSelectOptions(selectedOption) {
+        var statTypeSelect = dijit.byId("statType");
+        var prevStatType = statTypeSelect.value;
+
+        // clear statTypeSelect
+        statTypeSelect.removeOption(statTypeSelect.getOptions());
+
+        // find the field by name
+        var fieldName = dijit.byId("statField").value;
+        var field = null;
+        for (i = 0; i < _msLayerFields.length; i++) {
+          var currentField = _msLayerFields[i];
+          if (currentField.name == fieldName)
+            field = currentField;
+        }
+
+        // add the stat type options
+        var statTypeOptions = null;
+        if (isFieldNumeric(field)) {
+          // add all types
+          var options = [ {'label':'Average', 'value':'avg'},
+                          {'label':'Maximum', 'value':'max'},
+                          {'label':'Minimum', 'value':'min'},
+                          {'label':'Standard Deviation', 'value':'stddev'},
+                          {'label':'Sum', 'value':'sum'},
+                          {'label':'Variance', 'value':'var'},
+                          {'label':'Count Distinct', 'value':'countdistinct'},
+                          {'label':'Count', 'value':'count'} ];
+          statTypeSelect.addOption(options);
+        } else {
+          // add only the count and count distince types
+          var options = [ {'label':'Count Distinct', 'value':'countdistinct'},
+                          {'label':'Count', 'value':'count'} ];
+          statTypeSelect.addOption(options);
+        }
+
+        requestToUpdateLayerFromUI();
+      }
+
+      function updateLayerFields() {
+        var mapServiceInfoDeferred = esri.request({
+          url: _msLayer.url + "/0",
+          content: {
+            f: 'json'
+          },
+          callbackParamName: "callback"
+        });
+        mapServiceInfoDeferred.then(function (response) {
+              _msLayerFields = response.fields;
+              populateDijitSelectWithLayerFields(dijit.byId("statField"), false);
+              populateSelectWithLayerFields(dojo.byId(rotationExpression), true);
+              _allowRefreshLayer = false;
+              statFieldChanged(dijit.byId('statField').value); // to init-populate the stat types control
+              _allowRefreshLayer = true;
+            }
+        );
+      }
+
+      function populateDijitSelectWithLayerFields(select, numericOnly) {
+        // clear exiting options
+        select.removeOption(select.getOptions());
+
+        // populate options based on the _msLayerFields array
+        var i;
+        for (i = 0; i < _msLayerFields.length; i++) {
+          var field = _msLayerFields[i];
+          var fieldType = field.type.substring(13);
+          var option = {'label': field.name + "&nbsp;&nbsp;" + "<em class='fieldTypeSelect'>" + fieldType + '</em>', 'value': field.name, 'type': field.type };
+          if (numericOnly) {
+            if (isFieldNumeric(field))
+              select.addOption(option);
+          } else {
+            if (isSupportedStatField(field))
+              select.addOption(option);
+          }
+        }
+      }
+
+      function populateSelectWithLayerFields(select, numericOnly) {
+        // clear exiting options
+        var i;
+        for (i = select.options.length - 1; i >= 0; i--) {
+          select.remove(i);
+        }
+
+        // populate options based on the _msLayerFields array
+        var pos = 0;
+        for (i = 0; i < _msLayerFields.length; i++) {
+          var field = _msLayerFields[i];
+          if (numericOnly) {
+            if (isFieldNumeric(field))
+              select.options[pos++] = new Option(field.name, field.name);
+          } else {
+            if (isSupportedStatField(field))
+              select.options[pos++] = new Option(field.name, field.name);
+          }
+        }
+      }
+
+      // field type can be one of the following: "esriFieldTypeSmallInteger", "esriFieldTypeInteger", "esriFieldTypeSingle", "esriFieldTypeDouble", "esriFieldTypeString", "esriFieldTypeDate", "esriFieldTypeOID", "esriFieldTypeGeometry", "esriFieldTypeBlob", "esriFieldTypeRaster", "esriFieldTypeGUID", "esriFieldTypeGlobalID", "esriFieldTypeXML"
+      function isFieldNumeric(field) {
+          if (!field || !field.type)
+            return false;
+
+          return (field.type == "esriFieldTypeSmallInteger" || field.type == "esriFieldTypeInteger" || field.type == "esriFieldTypeSingle" || field.type == "esriFieldTypeDouble" || field.type == "esriFieldTypeOID");
+      }
+
+      function isSupportedStatField(field) {
+          if (!field || !field.type)
+            return false;
+
+          return (field.type != "esriFieldTypeGeometry" && field.type != "esriFieldTypeBlob" && field.type != "esriFieldTypeRaster")
+      }
+
+      function initRefreshRateSpinner() {
+        on(dojo.byId("refreshRateSpinner"), "change", function(e) {
+          value = parseInt(e.target.value);
+          if (value == 0)
+            _msLayer.setRefreshInterval(24 * 60);
+          else
+            _msLayer.setRefreshInterval(value / 60);
+        })
+      }
+
+      function populateFilteringSelectFonts(selectId) {
+        var selectContainer = dojo.byId(selectId + "Container");
+          if (!selectContainer)
+            return;
+           
+        var fonts = [
+          "Arial", "Arial Black", "Arial Narrow", "Baskerville Old Face", "Batang", "Bauhaus 93", "Bell MT", "Bernard MT Condensed", "Book Antiqua", "Bookman Old Style", "Brush Script MT", "Calisto MT", "Century", "Century Gothic", "Century Schoolbook", "Colonna MT", "Comic Sans MS", "Cooper Black", "Copperplate Gothic Light", "Courier", "Courier New", "Curlz MT", "Edwardian  Script ITC", "Engravers MT", "Footlight MT Light", "Garamond", "Georgia", "Goudy Old Style", "Gulim", "Haettenschweiler", "Handwriting - Dakota", "Harrington", "Helvetica", "Impact", "Imprint MT Shadow", "Lucida Bright", "Lucida Calligraphy", "Lucida Fax", "Lucida Handwriting", "Lucida Sans", "Lucida Sans Typewriter", "Matura MT Script Capitals", "Mistral", "Modern No. 20", "Monotype Corsiva", "MS Gothic", "MS Mincho", "MS PGothic", "MS PMincho", "Onyx", "Papyrus", "Perpetua Titling MT", "Plantagenet Cherokee", "Playbill", "PMingLiU", "Rockwell", "Serif", "SimSun", "Stencil", "Symbol", "Tahoma", "Times", "Times New Roman", "Trebuchet MS", "Verdana", "Webdings", "Wide Latin", "Wingdings", "Wingdings 2", "Wingdings 3" ];
+
+        var items = [];
+        for (var i = 0; i < fonts.length; i++) {
+          var font = fonts[i];
+          var item = {'id': font, 'label': font, 'value': font, 'type': 'Windows' };
+          items.push(item);
+        }
+
+        var fontsData = {
+            "identifier": "id",
+            "label": "label",
+            "items": items
+        };
+
+        var store = new ItemFileReadStore({
+          data: fontsData
+        });
+
+        var fontsSelect = new FilteringSelect({
+          store: store,
+          searchAttr: "label",
+          id: selectId,
+          value: "Arial",
+          style: { width: '98%' }
+        }).placeAt(selectContainer);
+        
+        fontsSelect.isValid = function() {
+          var val = this.get('displayedValue');
+          return true;
+        };
+      }
+
+    });
+  </script>
+</head>
+
+<body class="flat">
+<div id="map"></div>
+<!--
+<div id="map">
+  <div class="basemapGallery-container" style="opacity:0.70" data-dojo-type="dijit/TitlePane"
+       data-dojo-props="title:'Basemap', closable:false, open:false">
+    <div data-dojo-type="dijit/layout/ContentPane" style="width: 380px; height: 280px; overflow: auto">
+      <div id="basemapGallery"></div>
+    </div>
+  </div>
+</div>
+-->
+<div class="collapser">
+  <i id="collapserIcon" class="flat-chevron-right"></i>
+  <i id="expanderIcon" class="flat-chevron-left"></i>
+</div>
+<div id="controls">
+  <section>
+    <div class="config-header">
+      <h2>Layers</h2>
+      <div class="header-actions-group">
+        <i class="fa"></i>
+      </div>
+    </div>
+    <div class="config-content">
+      <div style="display: inline-block; width: 100%;">
+        <input type="text" id="inputUrl" value="https://arc01.asascience.com/server/rest/services/Hosted/wind_gfs/MapServer" style="width: calc(100% - 5px);"/>
+      </div>
+      <div class="input-row">
+        <input type="button" class="button" id="applyRendererButton" value="Apply Renderer"/>
+        <input type="button" class="button" id="setLayerButton" value="Set Layer"/>
+      </div>
+      <div class="input-group input-group-full">
+        <select id="wkid" name="wkid" style="width: 120px;">
+          <option value="102003">102003 (Albers)</option>
+          <option value="102100">102100 (Web Mercator)</option>
+          <option value="4326">4326 (WGS84)</option>
+          <option value="26911">26911 (NAD83 / UTM zone 11N)</option>
+          <option value="27700">27700 (British Natioal Grid)</option>
+          <option value="2243">2243 (Idaho West, State Plane)</option>
+          <option value="2244">2244 (Indiana East, State Plane)</option>
+          <option value="2248">2248 (Maryland, State Plane)</option>
+          <option value="3995">3995 (Arctic Polar Stereographic)</option>
+          <option value="2271">2271 (NAD_1983_StatePlane_Pennsylvania_North_FIPS_3701_Feet)</option>
+          <option value="2272">2272 (NAD_1983_StatePlane_Pennsylvania_South_FIPS_3702_Feet)</option>
+          <option value="3363">3363 (NAD_1983_HARN_StatePlane_Pennsylvania_North_FIPS_3701_Feet)</option>
+          <option value="3365">3365 (NAD_1983_HARN_StatePlane_Pennsylvania_South_FIPS_3702_Feet)</option>
+        </select>
+        <label for="wkid">Spatial Reference</label>
+      </div>
+      <div class="input-group input-group-full" style="display: none;">
+        <input type="text" id="currentMapSR" value="102100" style="width: 120px;" disabled="true"/>
+        <label for="currentMapSR">Current</label>
+      </div>
+      <div class="input-group input-group-full">
+        <input id="refreshRateSpinner" type="number" min="0" max="120000" value="0" />
+        <label for="refreshRateSpinner">Refresh Rate</label>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: none;">
+    <div class="config-header">
+      <h2>Aggregation Settings</h2>
+      <div class="header-actions-group">
+        <i class="fa"></i>
+      </div>
+    </div>
+    <div class="config-content">
+      <div class="input-row">
+        <div class="input-group">
+          <input type="number" id="featureThreshold" value="100" style="width: 60px;"/>
+          <label for="featureThreshold">Feature Threshold</label>
+        </div>
+        <div class="input-group">
+          <input type="number" id="lodOffset" value="0" style="width: 60px;"/>
+          <label for="lodOffset">LOD Offset</label>
+        </div>
+        <div class="input-group">
+          <input type="number" id="minBinSizeInPixels" value="25" style="width: 60px;"/>
+          <label for="minBinSizeInPixels">Min Bin Size (in pixels)</label>
+        </div>
+      </div>
+      <div class="input-row input-row-header" style="margin: 8px 0px 0px 0px; justify-content: flex-start;">
+        <label for="fullLodGrid">Full LOD Grid</label>
+        <input title="Render all LOD grid bins only without the actual data." type="checkbox" id="fullLodGrid"/>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: none;">
+    <div class="config-header">
+      <h2>Aggregation Style</h2>
+      <div class="header-actions-group">
+        <i class="fa"></i>
+      </div>
+    </div>
+    <div class="config-content">
+      <div class="input-group input-group-full">
+        <select name="geoHashStyle" id="geoHashStyle" style="width: 120px;">
+          <option value="geohash" selected="true">GeoHash</option>
+          <option value="square">Square</option>
+          <option value="flatHexagon">Flat Hexagon</option>
+          <option value="pointyHexagon">Pointy Hexagon</option>
+          <option value="flatTriangle">Flat Triangle</option>
+          <option value="pointyTriangle">Pointy Triangle</option>
+        </select>
+        <label for="geoHashStyle">LOD Type</label>
+      </div>
+      <div class="input-group input-group-full">
+        <select name="style" id="style" style="width: 90px;">
+          <option value="Grid">Grid</option>
+          <option value="Oval">Oval</option>
+        </select>
+        <label for="style">Style</label>
+      </div>
+      <div class="input-group input-group-full">
+        <input type="text" id="geoHashStyleSR" value="102100" style="width: 90px;"/>
+        <label for="geoHashStyleSR">LOD SR</label>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: none;">
+    <div class="config-header">
+      <h2>Aggregation Bins</h2>
+      <div class="header-actions-group">
+        <i class="fa"></i>
+      </div>
+    </div>
+    <div class="config-content">
+      <div class="input-row input-row-header-labeled">
+          <label>Min</label>
+          <label>Max</label>
+      </div>
+      <div class="input-row input-row-header" >
+        <label>Fill Color</label>
+        <input title="Min Fill Color" type="color" value="#ff0000" id="minColor" style="width: 20%;"/>
+        <input title="Max Fill Color" type="color" value="#ff0000" id="maxColor" style="width: 20%;"/>
+      </div>
+      <div class="input-row input-row-header" >
+        <label>Fill Opacity</label>
+        <input title="Min Fill Opacity" type="number" min="0" max="255" id="minColorA" value="0" style="width: 20%;"/>
+        <input title="Max Fill Opacity" type="number" min="0" max="255" id="maxColorA" value="255" style="width: 20%;"/>
+      </div>
+      <div class="input-row input-row-header" >
+        <label>Outline Color</label>
+        <input title="Min Outline Color" type="color" value="#000000" id="minOutlineColor" style="width: 20%;"/>
+        <input title="Max Outline Color" type="color" value="#000000" id="maxOutlineColor" style="width: 20%;"/>
+      </div>
+      <div class="input-row input-row-header" >
+        <label>Outline Opacity</label>
+        <input title="Min Outline Opacity" type="number" min="0" max="255" id="minOutlineColorA" value="100" style="width: 20%;"/>
+        <input title="Max Outline Opacity" type="number" min="0" max="255" id="maxOutlineColorA" value="100" style="width: 20%;"/>
+      </div>
+      <div class="input-row input-row-header" >
+        <label>Outline Width</label>
+        <input title="Min Outline Width" type="number" min="0" id="minOutlineWidth" value="0.5" style="width: 20%;"/>
+        <input title="Max Outline Width" type="number" min="0" id="maxOutlineWidth" value="0.5" style="width: 20%;"/>
+      </div>
+      <div class="input-row input-row-header" id="ovalAttrSection" style="display: none;" >
+        <label>Size</label>
+        <input title="Min Size in Precent" type="number" min="0" max="100" placeholder="min" id="minSize" value="100" style="width: 20%;"/>
+        <input title="Max Size in Precent" type="number" min="0" max="100" placeholder="max" id="maxSize" value="100" style="width: 20%;"/>
+      </div>
+      <div class="input-row input-row-header">
+        <label>Range</label>
+        <input title="Min Value. Leave empty to auto-calculate dynamically based on actual values in the current extent." type="number" id="minValue" value="" placeholder="min" style="width: 20%;"/>
+        <input title="Max Value. Leave empty to auto-calculate dynamically based on actual values in the current extent." type="number" id="maxValue" value="" placeholder="max" style="width: 20%;"/>
+      </div>
+
+      <div class="input-row input-row-header" style="justify-content: flex-start;">
+        <label for="normalizeByBinArea">Normalize</label>
+        <input title="Normalize By Bin Area" type="checkbox" id="normalizeByBinArea"/>
+      </div>
+
+      <div class="input-row input-row-header" style="justify-content: flex-start;">
+        <label for="useStats">Statistics</label>
+        <input type="checkbox" id="useStats"/>
+      </div>
+      <div class="input-row input-row-header">
+        <label></label>
+        <select name="statField" data-dojo-type="dijit/form/Select" data-dojo-attach-point="statField" id="statField" style="display:none; width: calc(64%);">
+        </select>
+      </div>
+      <div class="input-row input-row-header">
+        <label></label>
+        <select name="statType" data-dojo-type="dijit/form/Select" data-dojo-attach-point="statType" id="statType" style="display:none; width: calc(64%);"">
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-hidden" style="display: none;">
+    <div class="config-header">
+      <h2>Aggregation Labels</h2>
+      <div class="header-actions-group">
+        <input type="checkbox" id="renderLabels" checked="true"/>
+        <i class="fa"></i>
+      </div>
+    </div>
+
+    <div class="config-content" id="aggLabelsSection" style="display: block;">
+      <div style='display: inline-block; width: 100%;'>
+        <div style='float: left; width: 30%;'>Font</div>
+        <div style='float: left; width: 70%;'>
+          <div id="labelFontContainer"></div>
+        </div>
+      </div>
+      <div style='display: inline-block; width: 100%;'>
+        <div style='float: left; width: 30%;'>Style</div>
+        <div style='float: left; width: 70%;'>
+          <select name="labelStyle" id="labelStyle" style="width: 99%;">
+            <option value="PLAIN">Plain</option>
+            <option value="BOLD">Bold</option>
+            <option value="ITALIC">Italic</option>
+          </select>
+        </div>
+      </div>
+      <div style='display: inline-block; width: 100%;'>
+        <div style='float: left; width: 30%;'>Format</div>
+        <div style='float: left; width: 70%;'>
+          <input type="text" id="labelFormat" value="###.#KMB" style="width: 97%;"/>
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <input type="number" id="labelSize" value="12" style="width: 60px;"/>
+          <label for="labelSize">Size</label>
+        </div>
+        <div class="input-group">
+          <input type="color" value="#000000" id="labelColor" style="width: 60px;"/>
+          <label for="labelColor">Color</label>
+        </div>
+        <div class="input-group">
+          <input type="number" min="0" max="255" id="labelColorA" value="255" style="width: 60px;"/>
+          <label for="labelColorA">Opacity</label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-hidden" style="display: none;">
+    <div class="config-header">
+      <h2>Feature Rendering</h2>
+      <div class="header-actions-group">
+        <i class="fa"></i>
+      </div>
+    </div>
+    <div class="config-content">
+      <div class="input-row input-row-header">
+        <label for="Fstyle">Style</label>
+        <select name="Fstyle" id="Fstyle" style="width: 90px;">
+          <option value="esriSMScircle">Circle</option>
+          <option value="esriSMSCross">Cross</option>
+          <option value="esriSMSDiamond">Diamond</option>
+          <option value="esriSMSSquare">Square</option>
+          <option value="esriSMSX">X</option>
+          <option value="esriSMSPointer">Pointer</option>
+        </select>
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <input type="number" min="0" id="Fsize" value="12" style="width: 60px;"/>
+          <label for="Fsize">Size</label>
+        </div>
+        <div class="input-group">
+          <input type="color" value="#9ecae1" id="Fcolor" style="width: 60px;"/>
+          <label for="Fcolor">Color</label>
+        </div>
+        <div class="input-group">
+          <input type="number" min="0" max="255" id="FcolorA" value="150" style="width: 60px;"/>
+          <label for="FcolorA">Opacity</label>
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <input type="number" min="0" max="255" id="FoutlineW" value="1" style="width: 60px;"/>
+          <label for="FoutlineW">Outline Width</label>
+        </div>
+        <div class="input-group">
+          <input type="color" value="#000000" id="Foutline" style="width: 60px;""/>
+          <label for="Foutline">Outline Color</label>
+        </div>
+        <div class="input-group">
+          <input type="number" min="0" max="255" id="FoutlineA" value="255" style="width: 60px;"/>
+          <label for="FoutlineA">Outline Opacity</label>
+        </div>
+      </div>
+
+      <div class="input-row input-row-header" style="margin: 8px 0px 0px 0px; justify-content: flex-start;">
+        <label for="Fstyle">Rotation</label>
+        <input type="checkbox" id="useRotation"/>
+      </div>
+      <div class="input-row input-row-header">
+        <label></label>
+        <select id="rotationType" name="rotationType" style="width: 100%; margin-top:2px; display:none;">
+          <option value="arithmetic">Arithmetic</option>
+          <option value="geographic">Geographic</option>
+        </select>
+      </div>
+      <div class="input-row input-row-header">
+        <label></label>
+        <select name="rotationExpression" id="rotationExpression" style="width: 100%; margin-top:0px; display:none;" value="">
+        </select>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+
+</html>

@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="description" content="Analytical">
+  <title>3D Analytical Results</title>
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    } 
+    #homeDiv {
+      right: 15px;
+      top: 160px;
+      z-index: 35;
+      position: absolute;
+    }
+    #sizeInputDiv {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 12px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+    }
+  </style>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.3/esri/css/main.css">
+  <script src="https://js.arcgis.com/4.3/"></script>
+  <script>
+    require(["dojo/dom",
+      "dojo/on",
+      "esri/widgets/BasemapToggle",
+      "esri/Map",
+      "esri/Camera",
+      "esri/layers/GraphicsLayer",
+      "esri/Graphic",
+      "esri/geometry/Point",
+      "esri/views/SceneView",
+      "esri/layers/FeatureLayer",
+      "esri/layers/CSVLayer",
+      "esri/renderers/SimpleRenderer",
+      "esri/symbols/SimpleMarkerSymbol",
+      "esri/symbols/ObjectSymbol3DLayer",
+      "esri/symbols/IconSymbol3DLayer",
+      "esri/symbols/PointSymbol3D",
+      "esri/tasks/QueryTask",
+      "esri/widgets/Legend",
+      "esri/tasks/support/Query",
+      "esri/widgets/Home",
+      "dojo/dom-construct",
+      "dijit/form/CheckBox",
+      "esri/request",
+      "esri/config",
+      "dojo/domReady!"
+    ], function(dom,on,BasemapToggle,Map, camera, GraphicsLayer,Graphic,Point, SceneView,FeatureLayer, CSVLayer,
+      SimpleRenderer, SimpleMarkerSymbol, ObjectSymbol3DLayer,IconSymbol3DLayer, PointSymbol3D, QueryTask,Legend, Query,Home, domConstruct, CheckBox,esrirequest,esriConfig
+    ) {
+
+          me = this;
+
+          this.datalist = [];
+          esriConfig.request.corsEnabledServers.push("https://dev.terrabase.com");
+
+          //analyticalresults  JSON
+          var analyticalresults = "analyticalresults.csv";
+
+          var popupTemplate = { 
+            title: "{Location}",
+            content: "<b>Date and time:</b> {SampleDate}<br>" +
+              "<b>Magnesium (mg/Kg): </b> {Result}<br>" +
+              "<b>Bottom Depth: </b> {BottomDepth} meters<br>",
+            fieldInfos: [{
+              fieldName: "time",
+              format: {
+                dateFormat: "short-date-short-time"
+              }
+            }],
+            actions: [/*{
+              id: "find-wells",
+              title: "Nearby wells"
+            }*/]
+          };
+
+          var surfaceSym = new PointSymbol3D({
+            symbolLayers: [
+              new IconSymbol3DLayer({
+                material: {
+                  color: [144, 195, 212]
+                },
+                resource: {
+                  primitive: "circle"
+                }
+              })
+            ]
+          });
+
+          // Symbol size will vary depending on magnitude of the quake
+          var surfaceRenderer = new SimpleRenderer({
+            symbol: surfaceSym,
+            visualVariables: [
+            {
+              type: "color",
+              field: "Result",
+              stops: [{
+                  value: 250,
+                  color: '#e0f3db'
+                }, 
+                {
+                  value: 1000,
+                  color: '#a8ddb5'
+                }, 
+                {
+                  value: 3000,
+                  color: '#43a2ca'
+                }, 
+                {
+                  value: 5000,
+                  color: '#253494'
+                }
+              ] 
+            },{
+              type: "size",
+              field: "Result",
+              axis: "all",
+              stops: [
+              {
+                value: 250,
+                size: 1
+              },
+              {
+                value: 1000,
+                size: 5
+              },
+              {
+                value: 3000,
+                size: 10
+              },
+              {
+                value: 5000,
+                size: 20
+              }]
+            }]
+          });
+       
+         //Surface
+         var eqLayerSurface = new CSVLayer({
+            url: analyticalresults,
+            renderer: surfaceRenderer,
+            popupTemplate: popupTemplate
+          });
+
+        var map = new Map({
+          basemap: "hybrid",
+          ground: "world-elevation",
+          layers: [eqLayerSurface]//,quakesDepthLyr, quakesSurfaceLyr]
+        });
+
+        var view = new SceneView({
+          container: "viewDiv",
+          map: map,
+          // Indicates to create a local scene
+          viewingMode: "local",
+          // Allows for navigating the camera below the surface
+          constraints: {
+            collision: {
+              enabled: false
+            },
+            tilt: {
+              max: 179.99
+            }
+          },
+          // Turns off atmosphere and stars settings
+          environment: {
+            atmosphere: null,
+            starsEnabled: true
+          }
+        });
+
+    	  view.then(function() {
+    		   	view.goTo({
+    			  //target: view.graphics,
+    			  target: [-91.18113445, 30.455],
+    			  heading: 0,
+    			  tilt: 60,
+    			  zoom:15
+    		});
+
+        var legend = new Legend({
+            view: view,
+            layerInfos: [{
+              layer: eqLayerSurface,
+              title: "Magnesium Values"
+            }]
+          });
+
+        // Add widget to the bottom right corner of the view
+        view.ui.add(legend, "bottom-right");
+		});
+
+
+	  eqLayerSurface.then(function(e) {
+
+	  	var resultArray = [];
+	  	var layerFields = e.fields;
+	  	  
+	  	var graphicsLayer;
+
+      //This is where we would iteratate through JSON
+      //analyticalresults
+		  dojo.forEach(e.source._featureSetJSON.features,function(graphic){ 
+				
+				var px = graphic.geometry.x;
+				var py = graphic.geometry.y;
+				var pz = Number(graphic.attributes['BottomDepth']);
+    			
+    			var point = new Point({
+		            x: px,
+		            y: py,
+		            z: pz*-10 //exagerate 
+		          }),
+
+		          markerSymbol = new SimpleMarkerSymbol({
+		            color: [226, 119, 40],
+
+		            outline: { // autocasts as new SimpleLineSymbol()
+		              color: [255, 255, 255],
+		              width: 1
+		            }
+		          });
+
+		        var pointGraphic = new Graphic({
+		          geometry: point,
+              //symbol: markerSymbol,
+		          attributes:graphic.attributes 
+		        });
+		        
+		        resultArray.push(pointGraphic);
+		  });
+
+      /**************************************************
+       * Renderer for symbolizing data below the surface
+       **************************************************/
+      var resultDepthRenderer = new SimpleRenderer({
+        symbol: new PointSymbol3D({
+          symbolLayers: [new ObjectSymbol3DLayer({
+            resource: {
+              primitive: "cylinder"
+            }
+            //width: 50
+          })]
+        }),
+        visualVariables: [{
+          type: "size",
+          field: "BottomDepth",
+          axis: "height",
+          stops: [
+          {
+            value: 0,
+            size: 0
+          },
+          {
+            value: 40,
+            size: -2000
+          }]
+        }, {
+          type: "size",
+          axis: "width",
+          field: "Result",
+          stops: [{
+              value: 400,
+              size: 5
+            }, 
+            {
+              value: 1200,
+              size: 30
+            }, 
+            {
+              value: 3000,
+              size: 45
+            }, 
+            {
+              value: 5000,
+              size: 75
+            }],
+          useSymbolValue: false // sets the width to 50m
+        }, {
+          type: "color",
+          field: "Result",
+          stops: [{
+              value: 250,
+              color: '#e0f3db'
+            }, 
+            {
+              value: 1000,
+              color: '#a8ddb5'
+            }, 
+            {
+              value: 3000,
+              color: '#43a2ca'
+            }, 
+            {
+              value: 5000,
+              color: '#253494'
+            }]
+        }]
+      });
+
+      var resultDepthRendererNoWidth = new SimpleRenderer({
+        symbol: new PointSymbol3D({
+          symbolLayers: [new ObjectSymbol3DLayer({
+            resource: {
+              primitive: "cylinder"
+            },
+            width: 30
+          })]
+        }),
+        visualVariables: [{
+          type: "size",
+          field: "BottomDepth",
+          axis: "height",
+          stops: [
+          {
+            value: 0,
+            size: 0
+          },
+          {
+            value: 40,
+            size: -2048
+          }]
+        }, {
+          type: "size",
+          axis: "width",
+          useSymbolValue: true // sets the width to 50m
+        }, {
+          type: "color",
+          field: "Result",
+          stops: [{
+              value: 250,
+              color: '#e0f3db'
+            }, 
+            {
+              value: 1000,
+              color: '#a8ddb5'
+            }, 
+            {
+              value: 3000,
+              color: '#43a2ca'
+            }, 
+            {
+              value: 5000,
+              color: '#253494'
+            }]
+        }]
+      });
+      me.resultDepthRendererNoWidth = resultDepthRendererNoWidth;
+      me.resultDepthRenderer = resultDepthRenderer;
+		  //an alternative method for adding graphics but it doesn't honor popups templates
+		  //map.add(graphicsLayer);
+		  var resultDepthLyr = new FeatureLayer({
+		        source: resultArray,
+		        //definitionExpression: "Result >= 2",
+		        outFields: ["*"],
+		        fields: layerFields,
+		        renderer: resultDepthRenderer,
+		        objectIdField: "__OBJECTID",
+		        popupTemplate: popupTemplate,
+		        returnZ: true,
+		        spatialReference: {
+		            wkid: 4326
+		        },
+		        geometryType: "point",
+		        elevationInfo: {
+		          mode: "absolute-height"
+		          //offset:100 //exagerate depth
+		        }
+		  });
+     me.resultDepthLyr = resultDepthLyr;
+		 map.add(resultDepthLyr);
+	  });
+
+	  //click listener  
+    view.on("click", function(event) {
+  		 var screenPoint = {
+  		  x: event.x,
+  		  y: event.y
+  		 };
+		  // Search for graphics at the clicked location
+		  view.hitTest(screenPoint).then(function(response) {
+		    var result = response.results[0];
+
+		    if (result) {
+		      var lon = result.mapPoint.longitude;
+		      var lat = result.mapPoint.latitude;
+
+		      console.log("You click surface at (" + lon + ", " + lat + "), graphic:", result.graphic || "none");
+		    }
+		  });
+		});
+    /* add popup event button - not used now
+    view.popup.on("trigger-action", function(event) {
+      if (event.action.id === "find-wells") {
+        wellsBufferParams.geometry = view.popup.selectedFeature.geometry;
+        wellsQTask.executeForCount(wellsBufferParams).then(function(
+          response) {
+          var results = "<b>" + response +
+            "</b> active wells are within 10 km of this earthquake.";
+          view.popup.content = results;
+        }).otherwise(
+          function(err) {
+            console.log("action failed: ", err);
+          });
+      } else {
+        return;
+      }
+    });*/
+
+    // Set up a home button for resetting the viewpoint to the intial extent
+    /*var homeBtn = new Home({
+      view: view
+    }, "homeDiv");*/
+
+    //move ui elements
+    view.ui.move([ "zoom","compass","navigation-toggle" ], "top-right");
+    view.ui.remove("compass");
+
+    var toggleB = new BasemapToggle({
+        //map: map,
+        view: view,
+        basemap: "topo",
+        nextBasemap: "topo" 
+      }, "BasemapToggle");
+    view.ui.add(toggleB, "bottom-left");
+
+    on(dom.byId("sizeInput"), "change", updateSize);
+
+    function updateSize(ev) {
+      // adjust size for bins
+      map.ground.layers.forEach(function(layer) {
+        //layer.visible = ev.target.checked;
+
+        if(ev.target.checked){
+            me.resultDepthLyr.renderer = me.resultDepthRenderer;
+        }
+        else{
+            me.resultDepthLyr.renderer = me.resultDepthRendererNoWidth;
+        }
+      });
+    }
+
+    on(dom.byId("refreshDataID"), "click", refreshData);
+
+    function refreshData(){
+      
+      dom.byId("refreshDataID").innerHTML = "Loading...";
+      
+      var chemID = document.getElementById('chemNameDropdown').value;
+
+      if(me.datalist.length>0){
+
+        try{
+            for (var group in me.datalist){ 
+              if( me.datalist[group].String_11 == chemID){
+                  
+                  var depthavg = Number(me.datalist[group].String_2)+Number(me.datalist[group].String_3)/2;
+
+
+                  //String_11 = chemical
+                  //String_17 = result
+                  //String_9 = lat
+                  //String_10 = long
+                  //String_4 = date
+                  //String_1 = name
+                  //String_2: top depth,
+                  //String_3:  bottom depth,
+                  //String_19: units
+              }   
+          }
+        }
+        catch (e){
+          alert("There is no 3D data in this query.");
+        }
+      }
+      else{
+        alert("There is no 3D data in this query.");
+      }
+             
+      dom.byId("refreshDataID").innerHTML = "Refresh Data";
+    }
+
+    getQueryList();
+
+    function getQueryList(){
+
+      //var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report?sort=&page=1&pageSize=1000&group=&filter=Token~eq~'analytical_results'~and~IsGeoreferenced~eq~'Yes'";
+      var reqUrl = "list.json";
+
+      esrirequest(reqUrl).then(function( data ) {
+          
+        if(data.data.Data.length>0){
+          var i = 0;
+
+          for (var group in data.data.Data){ 
+               
+               domConstruct.create("option", { label:data.data.Data[group].Name, value:data.data.Data[group].ReportId }, dom.byId("queryNameDropdown"));
+               i++;
+            }
+          }
+
+          updateChemicalList(1106);
+          //refreshData();
+      },
+      function( error ){
+          console.log(error);
+          alert("Service Error For Requested Queries");
+      });
+    }
+
+    on(dom.byId("queryNameDropdown"), "change", updateChemicalList);
+
+    function updateChemicalList(queryID){
+
+        domConstruct.empty("chemNameDropdown");
+        var queryID = document.getElementById('queryNameDropdown').value;
+        
+        var reqUrl = "1106.json";
+        //var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report/"+queryID+"?sort=&page=1&pageSize=200&group=&filter=";
+
+        esrirequest(reqUrl).then(function( data ) {
+            
+          if(data.data.Data.length>0){
+            var i = 0;
+            var chemList = [];
+
+            for (var group in data.data.Data){ 
+                 
+                 if(chemList.indexOf(data.data.Data[group].String_11) < 0){
+                    chemList.push(data.data.Data[group].String_11);
+                    domConstruct.create("option", { label:data.data.Data[group].String_11 + ' ' +data.data.Data[group].String_19, value:data.data.Data[group].String_11 }, dom.byId("chemNameDropdown"));
+                 }
+
+                 if(data.data.Data[group].String_2 != null && data.data.Data[group].String_3 != null && data.data.Data[group].String_10 != null){
+                    me.datalist.push(data.data.Data[group]); 
+                 }                 
+
+                 i++;
+            }
+            dom.byId("refreshDataID").innerHTML = "Refresh Data";
+          }
+
+        },
+        function( error ){
+            console.log(error);
+            alert("Service Error For Requested Chemicals");
+        });
+    }
+
+    function refreshDataonMap(queryID){
+
+    }
+  });
+</script>
+</head>
+<body>
+  <div id="viewDiv">
+  </div>
+  <div id="homeDiv">
+  </div>
+  <div id="BasemapToggle"></div>
+  <div id="sizeInputDiv">
+    <label>Size based on Result Value 
+      <input id="sizeInput" type="checkbox" checked="yes">
+    </label>
+    <br>
+    <br>
+    <label>
+      <select class="queryControls" data-dojo-props="maxHeight: 100;width:300px" style="width:265px"  data-dojo-attach-point="queryNameDropdown" id='queryNameDropdown' data-dojo-type="dijit/form/Select"></select>
+    </label>
+    <br>
+    <br>
+    <label>
+      <select class="queryControls" data-dojo-props="maxHeight: 100;width:300px" style="width:265px" data-dojo-attach-point="chemNameDropdown" id='chemNameDropdown' data-dojo-type="dijit/form/Select"></select>
+    </label>
+    <br>
+    <br>
+    <button data-dojo-type="dijit/form/Button" id="refreshDataID" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconCut', showLabel: true" type="button">Loading...</button>
+  </div>
+</body>
+</html>

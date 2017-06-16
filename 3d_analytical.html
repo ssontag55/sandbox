@@ -1,15 +1,9 @@
 <!DOCTYPE html>
-<meta name="robots" content="noindex">
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
   <meta name="description" content="Analytical">
-  <!-- 
-  ArcGIS API for JavaScript, https://js.arcgis.com
-  For more information about the scene-local sample, read the original sample description at developers.arcgis.com.
-  https://developers.arcgis.com/javascript/latest/scene-local/index.html  
-  -->
   <title>3D Analytical Results</title>
   <style>
     html,
@@ -21,28 +15,24 @@
       width: 100%;
     } 
     #homeDiv {
-      left: 15px;
-      top: 130px;
+      right: 15px;
+      top: 160px;
       z-index: 35;
       position: absolute;
     }
-
     #sizeInputDiv {
       position: absolute;
       top: 12px;
-      right: 12px;
+      left: 12px;
       padding: 12px;
       background-color: rgba(0, 0, 0, 0.5);
       color: white;
     }
   </style>
-
   <link rel="stylesheet" href="https://js.arcgis.com/4.3/esri/css/main.css">
   <script src="https://js.arcgis.com/4.3/"></script>
-
   <script>
-    require([
-      "dojo/dom",
+    require(["dojo/dom",
       "dojo/on",
       "esri/widgets/BasemapToggle",
       "esri/Map",
@@ -52,47 +42,166 @@
       "esri/geometry/Point",
       "esri/views/SceneView",
       "esri/layers/FeatureLayer",
-      "esri/layers/CSVLayer",
       "esri/renderers/SimpleRenderer",
       "esri/symbols/SimpleMarkerSymbol",
       "esri/symbols/ObjectSymbol3DLayer",
       "esri/symbols/IconSymbol3DLayer",
       "esri/symbols/PointSymbol3D",
-      "esri/tasks/QueryTask",
       "esri/widgets/Legend",
-      "esri/tasks/support/Query",
       "esri/widgets/Home",
       "dojo/dom-construct",
       "dijit/form/CheckBox",
+      "esri/request",
+      "esri/config",
       "dojo/domReady!"
-    ], function(dom,on,BasemapToggle,Map, camera, GraphicsLayer,Graphic,Point, SceneView,FeatureLayer, CSVLayer,
-      SimpleRenderer, SimpleMarkerSymbol, ObjectSymbol3DLayer,
-      IconSymbol3DLayer, PointSymbol3D, QueryTask,Legend, Query,Home, domConstruct, CheckBox
+    ], function(dom,on,BasemapToggle,Map, camera, GraphicsLayer,Graphic,Point, SceneView,FeatureLayer,
+      SimpleRenderer, SimpleMarkerSymbol, ObjectSymbol3DLayer,IconSymbol3DLayer, PointSymbol3D, Legend,Home, domConstruct, CheckBox,esrirequest,esriConfig
     ) {
 
           me = this;
 
-          //analyticalresults  JSON
-          var analyticalresults = "analyticalresults.csv";
+          this.datalist = [];
+          esriConfig.request.corsEnabledServers.push("https://dev.terrabase.com");
+          me.resultDepthLyr = new FeatureLayer();
+          me.resultSurfaceLyr = new FeatureLayer();
 
-          var popupTemplate = { 
-            title: "{Location}",
-            content: "<b>Date and time:</b> {SampleDate}<br>" +
-              "<b>Magnesium (mg/Kg): </b> {Result}<br>" +
-              "<b>Bottom Depth: </b> {BottomDepth} meters<br>",
+          me.valuebreak1 = 1;
+          me.valuebreak2 = 100;
+          me.valuebreak3 = 1000;
+          me.valuebreak4 = 10000;
+
+          this.layerFields = [
+               {
+                 name: "RecordId",
+                 alias: "RecordId",
+                 type: "oid"
+               }, {
+                 name: "String_4",
+                 alias: "Date",
+                 type: "string"
+               }, {
+                 name: "String_17",
+                 alias: "Result",
+                 type: "string"
+               }, {
+                 name: "depth",
+                 alias: "Depth",
+                 type: "string"
+               }, {
+                 name: "String_11",
+                 alias: "Chemical",
+                 type: "string"
+               }, {
+                 name: "String_19",
+                 alias: "Units",
+                 type: "string"
+               }
+          ];
+
+          me.popupTemplate = { 
+            title: "{String_1}",
+            content: "<b>Date and time:</b> {String_4}<br>" +
+              "<b>{String_11} ({String_19}): </b> {String_17}<br>" +
+              "<b>Average Depth: </b> {depth} meters<br>",
             fieldInfos: [{
               fieldName: "time",
               format: {
                 dateFormat: "short-date-short-time"
               }
-            }],
-            actions: [/*{
-              id: "find-wells",
-              title: "Nearby wells"
-            }*/]
+            }]
           };
+       
+          var map = new Map({
+            basemap: "hybrid",
+            ground: "world-elevation"
+          });
+          me.map = map;
 
-          var surfaceSym = new PointSymbol3D({
+          var view = new SceneView({
+            container: "viewDiv",
+            map: map,
+            // Indicates to create a local scene
+            viewingMode: "local",
+            // Allows for navigating the camera below the surface
+            constraints: {
+              collision: {
+                enabled: false
+              },
+              tilt: {
+                max: 179.99
+              }
+            },
+            // Turns off atmosphere and stars settings
+            environment: {
+              atmosphere: null,
+              starsEnabled: true
+            }
+          });
+
+      	  view.then(function() {
+      		   	view.goTo({
+      			  //target: view.graphics,
+      			  target: [-91.18113445, 30.455],
+      			  heading: 0,
+      			  tilt: 60,
+      			  zoom:15
+      		});
+  		});
+
+  	  //click listener  
+      view.on("click", function(event) {
+    		 var screenPoint = {
+    		  x: event.x,
+    		  y: event.y
+    		 };
+  		  // Search for graphics at the clicked location
+  		  view.hitTest(screenPoint).then(function(response) {
+  		    var result = response.results[0];
+
+  		    if (result) {
+  		      var lon = result.mapPoint.longitude;
+  		      var lat = result.mapPoint.latitude;
+
+  		      console.log("You click surface at (" + lon + ", " + lat + "), graphic:", result.graphic || "none");
+  		    }
+  		  });
+  		});
+
+      //move ui elements
+      view.ui.move([ "zoom","compass","navigation-toggle" ], "top-right");
+      view.ui.remove("compass");
+
+      var toggleB = new BasemapToggle({
+          //map: map,
+          view: view,
+          basemap: "topo",
+          nextBasemap: "topo" 
+        }, "BasemapToggle");
+      view.ui.add(toggleB, "bottom-left");
+
+      on(dom.byId("sizeInput"), "change", updateSize);
+      on(dom.byId("refreshDataID"), "click", refreshData);
+      refreshRenderers();
+      getQueryList();
+
+      on(dom.byId("queryNameDropdown"), "change", updateChemicalList);
+
+    function updateSize(ev) {
+      // adjust size for bins
+      map.ground.layers.forEach(function(layer) {
+        //layer.visible = ev.target.checked;
+
+        if(ev.target.checked){
+            me.resultDepthLyr.renderer = me.resultDepthRenderer;
+        }
+        else{
+            me.resultDepthLyr.renderer = me.resultDepthRendererNoWidth;
+        }
+      });
+    }
+
+    function refreshRenderers(){
+        var surfaceSym = new PointSymbol3D({
             symbolLayers: [
               new IconSymbol3DLayer({
                 material: {
@@ -111,357 +220,403 @@
             visualVariables: [
             {
               type: "color",
-              field: "Result",
+              field: "String_17",
               stops: [{
-                  value: 250,
+                  value: me.valuebreak1,
                   color: '#e0f3db'
                 }, 
                 {
-                  value: 1000,
+                  value: valuebreak2,
                   color: '#a8ddb5'
                 }, 
                 {
-                  value: 3000,
+                  value: valuebreak3,
                   color: '#43a2ca'
                 }, 
                 {
-                  value: 5000,
+                  value: valuebreak4,
                   color: '#253494'
                 }
               ] 
             },{
               type: "size",
-              field: "Result",
+              field: "String_17",
               axis: "all",
               stops: [
               {
-                value: 250,
-                size: 1
+                value: valuebreak1,
+                size: 5
               },
               {
-                value: 1000,
-                size: 10
+                value: valuebreak2,
+                size: 18
               },
               {
-                value: 3000,
-                size: 20
-              },
-              {
-                value: 5000,
+                value: valuebreak3,
                 size: 30
+              },
+              {
+                value: valuebreak4,
+                size: 50
               }]
             }]
           });
-       
-         //Surface
-         var eqLayerSurface = new CSVLayer({
-            url: analyticalresults,
-            renderer: surfaceRenderer,
-            popupTemplate: popupTemplate
-          });
 
-        var map = new Map({
-          basemap: "hybrid",
-          ground: "world-elevation",
-          layers: [eqLayerSurface]//,quakesDepthLyr, quakesSurfaceLyr]
+          var resultDepthRenderer = new SimpleRenderer({
+          symbol: new PointSymbol3D({
+            symbolLayers: [new ObjectSymbol3DLayer({
+              resource: {
+                primitive: "cylinder"
+              }
+              //width: 50
+            })]
+          }),
+          visualVariables: [{
+            type: "size",
+            field: "depth",
+            axis: "height",
+            stops: [
+            {
+              value: 0,
+              size: 0
+            },
+            {
+              value: 40,
+              size: -2000
+            }]
+          }, {
+            type: "size",
+            axis: "width",
+            field: "String_17",
+            stops: [{
+                value: valuebreak1,
+                size: 5
+              }, 
+              {
+                value: valuebreak2,
+                size: 30
+              }, 
+              {
+                value: valuebreak3,
+                size: 45
+              }, 
+              {
+                value: valuebreak4,
+                size: 75
+              }],
+            useSymbolValue: false // sets the width to 50m
+          }, {
+            type: "color",
+            field: "String_17",
+            stops: [{
+                value: valuebreak1,
+                color: '#e0f3db'
+              }, 
+              {
+                value: valuebreak2,
+                color: '#a8ddb5'
+              }, 
+              {
+                value: valuebreak3,
+                color: '#43a2ca'
+              }, 
+              {
+                value: valuebreak4,
+                color: '#253494'
+              }]
+          }]
         });
 
-        var view = new SceneView({
-          container: "viewDiv",
-          map: map,
-          // Indicates to create a local scene
-          viewingMode: "local",
-          // Allows for navigating the camera below the surface
-          constraints: {
-            collision: {
-              enabled: false
+        var resultDepthRendererNoWidth = new SimpleRenderer({
+          symbol: new PointSymbol3D({
+            symbolLayers: [new ObjectSymbol3DLayer({
+              resource: {
+                primitive: "cylinder"
+              },
+              width: 30
+            })]
+          }),
+          visualVariables: [{
+            type: "size",
+            field: "depth",
+            axis: "height",
+            stops: [
+            {
+              value: 0,
+              size: 0
             },
-            tilt: {
-              max: 179.99
-            }
-          },
-          // Turns off atmosphere and stars settings
-          environment: {
-            atmosphere: null,
-            starsEnabled: true
+            {
+              value: 40,
+              size: -2048
+            }]
+          }, {
+            type: "size",
+            axis: "width",
+            useSymbolValue: true // sets the width to 50m
+          }, {
+            type: "color",
+            field: "String_17",
+            stops: [{
+                value: valuebreak1,
+                color: '#e0f3db'
+              }, 
+              {
+                value: valuebreak2,
+                color: '#a8ddb5'
+              }, 
+              {
+                value: valuebreak3,
+                color: '#43a2ca'
+              }, 
+              {
+                value: valuebreak4,
+                color: '#253494'
+              }]
+          }]
+        });
+        me.resultDepthRendererNoWidth = resultDepthRendererNoWidth;
+        me.resultDepthRenderer = resultDepthRenderer; 
+        me.surfaceRenderer = surfaceRenderer;
+    }
+
+    function refreshData(){
+      
+      dom.byId("refreshDataID").innerHTML = "Loading...";
+      
+      var resultArray3d = [];
+      var resultArray2d = [];
+
+      var maxResultValue = 1;
+      var minResultValue = 1;
+
+      var graphicsLayer;
+      var is3Dlayer = false;
+      me.map.remove(me.resultDepthLyr);
+      me.map.remove(me.resultSurfaceLyr);
+
+      var chemID = document.getElementById('chemNameDropdown').value;
+
+      if(me.datalist.length>0){
+
+        try{
+            for (var group in me.datalist){ 
+              if( me.datalist[group].String_11 == chemID){
+                  
+                  if(me.datalist[group].String_2 != null && me.datalist[group].String_3 != null){
+                    var depthavg = Number(me.datalist[group].String_2)+Number(me.datalist[group].String_3)/2;
+                    var point3d = new Point({
+                        x: px,
+                        y: py,
+                        z: depthavg*-10 //exagerate 
+                    });
+                    me.datalist[group].depth = depthavg;
+
+                    var pointGraphic3d = new Graphic({
+                      geometry: point3d,
+                      attributes:me.datalist[group]
+                    });
+                    resultArray3d.push(pointGraphic3d);
+                    is3Dlayer = true;
+                  }
+
+                 if(Number(me.datalist[group].String_17) > maxResultValue){
+                    maxResultValue = Number(me.datalist[group].String_17);
+                  }
+                  if(Number(me.datalist[group].String_17) < minResultValue){
+                    minResultValue = Number(me.datalist[group].String_17);
+                  }
+                  
+                  var px = me.datalist[group].String_10;
+                  var py = me.datalist[group].String_9;
+                  
+                  var point2d = new Point({
+                        x: px,
+                        y: py,
+                  });
+                  me.datalist[group].depth = 0;
+
+                  markerSymbol = new SimpleMarkerSymbol({
+                    color: [226, 119, 40],
+                    outline: { // autocasts as new SimpleLineSymbol()
+                      color: [255, 255, 255]
+                    },
+                    width: 100
+                  });
+
+                  var pointGraphic2d = new Graphic({
+                    geometry: point2d,
+                    //symbol: markerSymbol,
+                    attributes:me.datalist[group]
+                  });
+                  
+                  resultArray2d.push(pointGraphic2d);
+
+                  //String_11 = chemical
+                  //String_17 = result
+                  //String_9 = lat
+                  //String_1: title
+                  //String_10 = long
+                  //String_4 = date
+                  //String_1 = name
+                  //String_2: top depth,
+                  //String_3:  bottom depth,
+                  //String_19: units
+              }   
           }
-        });
 
-    	  view.then(function() {
-    		   	view.goTo({
-    			  //target: view.graphics,
-    			  target: [-91.18113445, 30.455],
-    			  heading: 0,
-    			  tilt: 60,
-    			  zoom:15
-    		});
+          me.valuebreak1 = minResultValue;
+          me.valuebreak2 = maxResultValue*.5;
+          me.valuebreak3 = maxResultValue*.75;
+          me.valuebreak4 = maxResultValue*1;
 
-        var legend = new Legend({
-            view: view,
-            layerInfos: [{
-              layer: eqLayerSurface,
-              title: "Magnesium Values"
-            }]
+          refreshRenderers();
+
+          //Surface
+          var resultSurfaceLyr = new FeatureLayer({
+            source: resultArray2d,
+            renderer: me.surfaceRenderer,
+            outFields: ["*"],
+            fields: me.layerFields,
+            objectIdField: "RecordId",
+            popupTemplate: me.popupTemplate,
+            spatialReference: {
+                wkid: 4326
+            },
+            geometryType: "point"
           });
 
-        // Add widget to the bottom right corner of the view
-        view.ui.add(legend, "bottom-right");
-		});
+          me.resultSurfaceLyr = resultSurfaceLyr;
+          me.map.add(resultSurfaceLyr);
 
+          if(me.legend){
+            me.legend.destroy();
+          }
+          if(is3Dlayer){
+              var resultDepthLyr = new FeatureLayer({
+                source: resultArray3d,
+                outFields: ["*"],
+                fields: me.layerFields,
+                renderer: me.resultDepthRenderer,
+                objectIdField: "RecordId",
+                popupTemplate: me.popupTemplate,
+                spatialReference: {
+                    wkid: 4326
+                },
+                geometryType: "point",
+                returnZ: true,
+                elevationInfo: {
+                  mode: "absolute-height"
+                  //offset:100 //exagerate depth
+                }
+            });
 
-	  eqLayerSurface.then(function(e) {
-
-	  	var resultArray = [];
-	  	var layerFields = e.fields;
-	  	  
-	  	var graphicsLayer;
-
-
-      //This is where we would iteratate through JSON
-      //analyticalresults
-		  dojo.forEach(e.source._featureSetJSON.features,function(graphic){ 
-				
-				var px = graphic.geometry.x;
-				var py = graphic.geometry.y;
-				var pz = Number(graphic.attributes['BottomDepth']);
-    			
-    			var point = new Point({
-		            x: px,
-		            y: py,
-		            z: pz*-10 //exagerate 
-		          }),
-
-		          markerSymbol = new SimpleMarkerSymbol({
-		            color: [226, 119, 40],
-
-		            outline: { // autocasts as new SimpleLineSymbol()
-		              color: [255, 255, 255],
-		              width: 1
-		            }
-		          });
-
-		        var pointGraphic = new Graphic({
-		          geometry: point,
-              //symbol: markerSymbol,
-		          attributes:graphic.attributes 
-		        });
-		        
-		        resultArray.push(pointGraphic);
-
-		       //graphicsLayer.add(pointGraphic);
-		  });
-
-      /**************************************************
-       * Renderer for symbolizing data below the surface
-       **************************************************/
-      var resultDepthRenderer = new SimpleRenderer({
-        symbol: new PointSymbol3D({
-          symbolLayers: [new ObjectSymbol3DLayer({
-            resource: {
-              primitive: "cylinder"
-            }
-            //width: 50
-          })]
-        }),
-        visualVariables: [{
-          type: "size",
-          field: "BottomDepth",
-          axis: "height",
-          stops: [
-          {
-            value: 0,
-            size: 0
-          },
-          {
-            value: 40,
-            size: -2048
-          }]
-        }, {
-          type: "size",
-          axis: "width",
-          field: "Result",
-          stops: [{
-              value: 400,
-              size: 10
-            }, 
-            {
-              value: 1200,
-              size: 60
-            }, 
-            {
-              value: 3000,
-              size: 90
-            }, 
-            {
-              value: 5000,
-              size: 150
-            }],
-          useSymbolValue: false // sets the width to 50m
-        }, {
-          type: "color",
-          field: "Result",
-          stops: [{
-              value: 250,
-              color: '#e0f3db'
-            }, 
-            {
-              value: 1000,
-              color: '#a8ddb5'
-            }, 
-            {
-              value: 3000,
-              color: '#43a2ca'
-            }, 
-            {
-              value: 5000,
-              color: '#253494'
-            }]
-        }]
-      });
-
-
-      var resultDepthRendererNoWidth = new SimpleRenderer({
-        symbol: new PointSymbol3D({
-          symbolLayers: [new ObjectSymbol3DLayer({
-            resource: {
-              primitive: "cylinder"
-            },
-            width: 50
-          })]
-        }),
-        visualVariables: [{
-          type: "size",
-          field: "BottomDepth",
-          axis: "height",
-          stops: [
-          {
-            value: 0,
-            size: 0
-          },
-          {
-            value: 40,
-            size: -2048
-          }]
-        }, {
-          type: "size",
-          axis: "width",
-          useSymbolValue: true // sets the width to 50m
-        }, {
-          type: "color",
-          field: "Result",
-          stops: [{
-              value: 250,
-              color: '#e0f3db'
-            }, 
-            {
-              value: 1000,
-              color: '#a8ddb5'
-            }, 
-            {
-              value: 3000,
-              color: '#43a2ca'
-            }, 
-            {
-              value: 5000,
-              color: '#253494'
-            }]
-        }]
-      });
-      me.resultDepthRendererNoWidth = resultDepthRendererNoWidth;
-      me.resultDepthRenderer = resultDepthRenderer;
-		  //an alternative method for adding graphics but it doesn't honor popups templates
-		  //map.add(graphicsLayer);
-		  var resultDepthLyr = new FeatureLayer({
-		        source: resultArray,
-		        //definitionExpression: "Result >= 2",
-		        outFields: ["*"],
-		        fields: layerFields,
-		        renderer: resultDepthRenderer,
-		        objectIdField: "__OBJECTID",
-		        popupTemplate: popupTemplate,
-		        returnZ: true,
-		        spatialReference: {
-		            wkid: 4326
-		        },
-		        geometryType: "point",
-		        elevationInfo: {
-		          mode: "absolute-height"
-		          //offset:100 //exagerate depth
-		        }
-		  });
-     me.resultDepthLyr = resultDepthLyr;
-		 map.add(resultDepthLyr);
-	  });
-
-
-	  //click listener  
-    view.on("click", function(event) {
-  		 var screenPoint = {
-  		  x: event.x,
-  		  y: event.y
-  		 };
-		  // Search for graphics at the clicked location
-		  view.hitTest(screenPoint).then(function(response) {
-		    var result = response.results[0];
-
-		    if (result) {
-		      var lon = result.mapPoint.longitude;
-		      var lat = result.mapPoint.latitude;
-
-		      console.log("You click surface at (" + lon + ", " + lat + "), graphic:", result.graphic || "none");
-		    }
-		  });
-		});
-
-    // Set up a home button for resetting the viewpoint to the intial extent
-    var homeBtn = new Home({
-      view: view
-    }, "homeDiv");
-
-    var toggleB = new BasemapToggle({
-        //map: map,
-        view: view,
-        basemap: "topo",
-        nextBasemap: "topo" 
-      }, "BasemapToggle");
-    view.ui.add(toggleB, "bottom-left");
-
-    on(dom.byId("sizeInput"), "change", updateSize);
-
-      function updateSize(ev) {
-        // adjust size for bins
-        map.ground.layers.forEach(function(layer) {
-          //layer.visible = ev.target.checked;
-
-          if(ev.target.checked){
-              me.resultDepthLyr.renderer = me.resultDepthRenderer;
+            me.resultDepthLyr = resultDepthLyr;
+            me.map.add(resultDepthLyr);
+            me.legend = new Legend({
+              view: view,
+              layerInfos: [{
+                layer: me.resultDepthLyr,
+                title: chemID+" Analytical Values ("+me.datalist[1].String_19+')'
+              }]
+            });
           }
           else{
-              me.resultDepthLyr.renderer = me.resultDepthRendererNoWidth;
-          }
-        });
-      }
-
-      /* add popup event button - not used now
-      view.popup.on("trigger-action", function(event) {
-        if (event.action.id === "find-wells") {
-          wellsBufferParams.geometry = view.popup.selectedFeature.geometry;
-          wellsQTask.executeForCount(wellsBufferParams).then(function(
-            response) {
-            var results = "<b>" + response +
-              "</b> active wells are within 10 km of this earthquake.";
-            view.popup.content = results;
-          }).otherwise(
-            function(err) {
-              console.log("action failed: ", err);
+            alert("There is no 3D data in this query.");
+            me.legend = new Legend({
+              view: view,
+              layerInfos: [{
+                layer: me.resultSurfaceLyr,
+                title: chemID+" Analytical Values ("+me.datalist[1].String_19+')'
+              }]
             });
-        } else {
-          return;
+          }
+          view.ui.add(legend, "bottom-right");
+          view.then(function() {
+              view.goTo({
+              target: resultArray2d,
+              //target: [-91.18113445, 30.455],
+              heading: 0,
+              tilt: 60,
+              zoom:15
+          });
+              });
         }
-      });*/
-  });
+        catch (e){
+          alert("There is no valid data in this query.");
+        }
+      }
+      else{
+        alert("There is no valid data in this query.");
+      }
+             
+      dom.byId("refreshDataID").innerHTML = "Refresh Data";
+    }
 
-  </script>
+    function getQueryList(){
+
+      var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report?sort=&page=1&pageSize=1000&group=&filter=Token~eq~'analytical_results'~and~IsGeoreferenced~eq~'Yes'";
+      //var reqUrl = "list.json";
+
+      esrirequest(reqUrl).then(function( data ) {
+          
+        if(data.data.Data.length>0){
+          var i = 0;
+
+          for (var group in data.data.Data){ 
+               
+               domConstruct.create("option", { label:data.data.Data[group].Name, value:data.data.Data[group].ReportId }, dom.byId("queryNameDropdown"));
+               i++;
+            }
+          }
+
+          updateChemicalList(1106);
+          //refreshData();
+      },
+      function( error ){
+          console.log(error);
+          alert("Service Error For Requested Queries");
+      });
+    }
+
+    function updateChemicalList(queryID){
+
+        domConstruct.empty("chemNameDropdown");
+        var queryID = document.getElementById('queryNameDropdown').value;
+        me.datalist = [];
+        
+        //var reqUrl = "1092.json";
+        var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report/"+queryID+"?sort=&page=1&pageSize=200&group=&filter=";
+
+        esrirequest(reqUrl).then(function( data ) {
+            
+          if(data.data.Data.length>0){
+            var i = 0;
+            var chemList = [];
+            for (var group in data.data.Data){ 
+                 
+                 if(chemList.indexOf(data.data.Data[group].String_11) < 0){
+                    chemList.push(data.data.Data[group].String_11);
+                    domConstruct.create("option", { label:data.data.Data[group].String_11 + ' ' +data.data.Data[group].String_19, value:data.data.Data[group].String_11 }, dom.byId("chemNameDropdown"));
+                 }
+
+                 if(data.data.Data[group].String_9 != null && data.data.Data[group].String_10 != null){
+                    me.datalist.push(data.data.Data[group]); 
+                 }                 
+                 i++;
+            }
+
+            dom.byId("refreshDataID").innerHTML = "Refresh Data";
+          }
+          refreshData();
+        },
+        function( error ){
+            console.log(error);
+            alert("Service Error For Requested Chemicals");
+        });
+    }
+
+  });
+</script>
 </head>
 <body>
   <div id="viewDiv">
@@ -470,9 +625,22 @@
   </div>
   <div id="BasemapToggle"></div>
   <div id="sizeInputDiv">
-    <label>Size based on Result Value:
+    <label>Size based on Result Value 
       <input id="sizeInput" type="checkbox" checked="yes">
     </label>
+    <br>
+    <br>
+    <label>
+      <select class="queryControls" data-dojo-props="maxHeight: 100;width:300px" style="width:265px"  data-dojo-attach-point="queryNameDropdown" id='queryNameDropdown' data-dojo-type="dijit/form/Select"></select>
+    </label>
+    <br>
+    <br>
+    <label>
+      <select class="queryControls" data-dojo-props="maxHeight: 100;width:300px" style="width:265px" data-dojo-attach-point="chemNameDropdown" id='chemNameDropdown' data-dojo-type="dijit/form/Select"></select>
+    </label>
+    <br>
+    <br>
+    <button data-dojo-type="dijit/form/Button" id="refreshDataID" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconCut', showLabel: true" type="button">Loading...</button>
   </div>
 </body>
 </html>
