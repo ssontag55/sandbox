@@ -12,7 +12,6 @@
   <script src="esri-leaflet-gp.js"></script>
   <script src="turf.min.js"></script>
   <script src="classybrew.js"></script>
-  <script src="heat.js"></script>
   <style>
     html,
     body,
@@ -80,16 +79,12 @@
       <select class="queryControls" style="width:265px;" id='chemNameDropdown' ></select>
     </div>
     <br>
-<!--     <div>
+    <div>
       <select class="queryControls" style="width:265px;" id='chemDateDropdown'></select>
     </div>
-    <br> -->
+    <br>
     <button id="refreshDataID">Loading...</button>
     <img src="indeterminate.gif" id="loadinggf" style="float:right;">
-    <div style="float: right;padding-right: 13px;">
-      <input type="checkbox" id="genheat">
-      <label for="genheat">Heatmap</label>
-    </div>
   </div>
   <div id="basemaps-wrapper" class="leaflet-bar">
     <select name="basemaps" id="basemaps" onChange="changeBasemap(basemaps)">
@@ -123,7 +118,6 @@
       this.datalist = [];
       me.resultLyr = [];
       me.resultInterpolateLyr = [];
-      me.resultHeatmapLyr = [];
 
       me.valuebreak1 = 1;
       me.valuebreak2 = 100;
@@ -169,11 +163,9 @@
       getQueryList();
 
       $("#queryNameDropdown").on('change', me.updateChemicalList);
-      $("#chemNameDropdown").on('change', me.refreshData);
-      $("#genheat").click(me.updateHeatMap);
+      $("#chemNameDropdown").on('change', me.updateChemicalDateList);
+      $("#chemDateDropdown").on('change', me.refreshData);
       $("#refreshDataID").on('click', me.showContourLines);
-
-      //$("#chemDateDropdown").on('change', me.refreshData);
     }
 
     function getQueryList(){
@@ -216,8 +208,6 @@
 
       me.map.removeLayer(me.resultLyr);
       me.map.removeLayer(me.resultInterpolateLyr);
-      me.map.removeLayer(me.resultHeatmapLyr);
-      $('#genheat').prop( "checked", false );
 
       var chemID = document.getElementById('chemNameDropdown').value;
 
@@ -301,7 +291,7 @@
         alert("There is no valid data in this query.");
       }
              
-      $("#refreshDataID").html("Interpolate Points");  
+      $("#refreshDataID").html("Generate Heat Map");  
       $("#loadinggf").hide();
     }
 
@@ -344,30 +334,10 @@
                }          
             }
           }
-          //me.updateChemicalDateList();
-          $("#refreshDataID").html("Interpolate Points");  
-          $("#loadinggf").hide();
-          refreshData();
+          me.updateChemicalDateList();
         });
     }
 
-    function updateHeatMap(e){
-
-        if($('#genheat').prop('checked') == true){
-
-            var heatmapArray = [];
-            for (var val in me.datalist){
-                heatmapArray.push([me.datalist[val].String_9,me.datalist[val].String_10,me.datalist[val].String_17]);
-            }
-
-            me.resultHeatmapLyr = L.heatLayer(heatmapArray, {radius: 50}).addTo(map);
-        }
-        else{
-            me.map.removeLayer(me.resultHeatmapLyr);
-        }
-    }
-
-    /* Time option disabled right now
     function updateChemicalDateList(){
 
       var chemID = document.getElementById('chemNameDropdown').value;
@@ -382,10 +352,10 @@
          }
        }
         
-       $("#refreshDataID").html("Interpolate Points");  
+       $("#refreshDataID").html("Generate Heat Map");  
        $("#loadinggf").hide();
        refreshData();
-    }*/
+    }
 
     function showContourLines() {
 
@@ -554,14 +524,14 @@
                             me.resultLyr.getLayers().map(function(pt) {
                                 pt.bringToFront();
                             });
-                            $("#refreshDataID").html("Interpolate Points");  
+                            $("#refreshDataID").html("Generate Heat Map");  
                             $("#loadinggf").hide();
                         });
                     });
                 }
                 catch (err) {
                     alert("There was an issue interpolating points.<br>"+err);
-                    $("#refreshDataID").html("Interpolate Points"); 
+                    $("#refreshDataID").html("Generate Heat Map"); 
                     $("#loadinggf").hide();
                     //kendo.ui.progress(this, false);
                 }
