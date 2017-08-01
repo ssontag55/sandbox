@@ -433,7 +433,7 @@
                         x: px,
                         y: py,
                   });
-                  me.datalist[group].depth = 0;
+                  //me.datalist[group].depth = 0;
 
                   markerSymbol = new SimpleMarkerSymbol({
                     color: [226, 119, 40],
@@ -585,6 +585,7 @@
         me.datalist = [];
         
         //var reqUrl = "1092.json";
+        //var reqUrl = "1106.json";
         var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report/"+queryID+"?sort=&page=1&pageSize=200&group=&filter=";
 
         esrirequest(reqUrl).then(function( data ) {
