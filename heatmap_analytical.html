@@ -356,11 +356,20 @@
         if($('#genheat').prop('checked') == true){
 
             var heatmapArray = [];
+            var maxVal = 0;
             for (var val in me.datalist){
                 heatmapArray.push([me.datalist[val].String_9,me.datalist[val].String_10,me.datalist[val].String_17]);
+                if(me.datalist[val].String_17>maxVal){
+                  maxVal = me.datalist[val].String_17;
+                }
             }
 
-            me.resultHeatmapLyr = L.heatLayer(heatmapArray, {radius: 50}).addTo(map);
+            //gradient - color gradient config, e.g. {0.4: 'blue', 0.65: 'lime', 1: 'red'}
+            me.resultHeatmapLyr = L.heatLayer(heatmapArray, {maxZoom: 13,minOpacity:.9,radius: 40,blur:60, max:maxVal/2, gradient:{.1:'#75995A', .5:'#AAC92D', .7:'#E0D819', .9:'#EEBB11', 1:'#FD9B08'}}).addTo(map);
+
+            me.resultLyr.getLayers().map(function(pt) {
+                pt.bringToFront();
+            });
         }
         else{
             me.map.removeLayer(me.resultHeatmapLyr);
