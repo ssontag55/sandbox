@@ -80,15 +80,16 @@
       <select class="queryControls" style="width:265px;" id='chemNameDropdown' ></select>
     </div>
     <br>
-<!--     <div>
+  <!--<div>
       <select class="queryControls" style="width:265px;" id='chemDateDropdown'></select>
     </div>
     <br> -->
-    <button id="refreshDataID">Loading...</button>
+    <button id="refreshDataID" style="width: 148px;">Loading...</button>
     <img src="indeterminate.gif" id="loadinggf" style="float:right;">
     <div style="float: right;padding-right: 13px;">
-      <input type="checkbox" id="genheat">
+      <input type="checkbox" id="interpLayerToggle" checked style="margin-right:29px">
       <label for="genheat">Heatmap</label>
+      <input type="checkbox" id="genheat">
     </div>
   </div>
   <div id="basemaps-wrapper" class="leaflet-bar">
@@ -171,6 +172,7 @@
       $("#queryNameDropdown").on('change', me.updateChemicalList);
       $("#chemNameDropdown").on('change', me.refreshData);
       $("#genheat").click(me.updateHeatMap);
+      $("#interpLayerToggle").click(me.toggleInterpolateLayer);
       $("#refreshDataID").on('click', me.showContourLines);
 
       //$("#chemDateDropdown").on('change', me.refreshData);
@@ -347,8 +349,20 @@
           //me.updateChemicalDateList();
           $("#refreshDataID").html("Interpolate Points");  
           $("#loadinggf").hide();
+          $('#interpLayerToggle').prop( "checked", false );
           refreshData();
         });
+    }
+
+    function toggleInterpolateLayer(e){
+        if(me.resultInterpolateLyr.options){
+          if($('#interpLayerToggle').prop('checked') == true){
+              me.map.addLayer(me.resultInterpolateLyr);
+          }
+          else{
+              me.map.removeLayer(me.resultInterpolateLyr);
+          } 
+        }
     }
 
     function updateHeatMap(e){
@@ -400,6 +414,7 @@
 
         $("#refreshDataID").html("Interpolating Data ..");  
         $("#loadinggf").show();
+        $('#interpLayerToggle').prop( "checked", true );
 
         me.map.removeLayer(me.resultInterpolateLyr);
 
