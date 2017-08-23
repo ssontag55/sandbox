@@ -105,6 +105,7 @@
   </div>
   <script>
     
+    var tenantId= @Session["TenantId"];
     startupMap();
 
     //Data Attributes value keys
@@ -180,8 +181,8 @@
 
     function getQueryList(){
 
-      //var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report?sort=&page=1&pageSize=1000&group=&filter=Token~eq~'analytical_results'~and~IsGeoreferenced~eq~'Yes'";
-      var reqUrl = "list.json";
+      var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report?sort=&page=1&pageSize=1000&group=&filter=Token~eq~'analytical_results'~and~IsGeoreferenced~eq~'Yes'";
+      //var reqUrl = "list.json";
 
       $.ajax({
             type: "GET",
@@ -312,8 +313,8 @@
         var queryID = document.getElementById('queryNameDropdown').value;
         me.datalist = [];
         
-        var reqUrl = "1106.json";
-        //var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report/"+queryID+"?sort=&page=1&pageSize=200&group=&filter=";
+        //var reqUrl = "1106.json";
+        var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report/"+queryID+"?sort=&page=1&pageSize=200&group=&filter=";
 
         $.ajax({
             type: "GET",
