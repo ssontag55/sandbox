@@ -1,212 +1,241 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-  <meta name="description" content="Analytical">
+<html>  
+<head> 
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no"/>
   <title>OceansMap ESRI</title>
-  <style>
-    html,
-    body,
-    #viewDiv {
-      padding: 0;
-      margin: 0;
-      height: 100%;
-      width: 100%;
-    } 
-    #homeDiv {
-      right: 15px;
-      top: 160px;
-      z-index: 35;
-      position: absolute;
-    }
-    #sizeInputDiv {
-      position: absolute;
-      display: none;
-      top: 12px;
-      left: 12px;
-      padding: 12px;
-      background-color: rgba(0, 0, 0, 0.5);
-      color: white;
-    }
-  </style>
-  <link rel="stylesheet" href="https://js.arcgis.com/4.4/esri/css/main.css">
-  <script src="https://js.arcgis.com/4.4/"></script>
-  <script>
-    require(["dojo/dom",
-      "dojo/on",
-      "esri/widgets/BasemapToggle",
-      "esri/Map",
-      "esri/Camera",
-      "esri/layers/GraphicsLayer",
-      "esri/Graphic",
-      "esri/geometry/Point",
-      "esri/views/MapView",
-      "esri/layers/FeatureLayer",
-      "esri/renderers/SimpleRenderer",
-      "esri/symbols/PictureMarkerSymbol",
-      "esri/symbols/TextSymbol",
-      "esri/layers/support/LabelClass",
-      "esri/symbols/ObjectSymbol3DLayer",
-      "esri/symbols/IconSymbol3DLayer",
-      "esri/layers/LabelLayer",
-      "esri/symbols/PointSymbol3D",
-      "esri/widgets/Legend",
-      "esri/widgets/Home",
-      "dojo/dom-construct",
-      "dijit/form/CheckBox",
-      "esri/request",
-      "esri/config",
+  <link rel="stylesheet" href="https://js.arcgis.com/3.21/dijit/themes/claro/claro.css">    
+  <link rel="stylesheet" href="https://js.arcgis.com/3.21/esri/css/esri.css">
+  <style> 
+    html, body { height: 100%; width: 100%; margin: 0; padding: 0; }
+    #map{
+        padding:0;
+        margin:0;
+        height:100%;
+        position: relative;
+    },
+    #bottomPanel {
+        left: 50%;
+        margin: 0 auto;
+        margin-left: -500px;
+        position: absolute; 
+        bottom: 2.5em;
+      }
+
+      #timeInfo{
+        border-radius: 4px;
+        border: solid 2px #ccc;
+        background-color: #fff;
+        display: block;
+        padding: 5px;
+        position: relative;
+        text-align: center;
+        width: 1000px;
+        z-index: 99;
+      }
+  </style> 
+  
+  <script src="https://js.arcgis.com/3.21/"></script>
+  <script> 
+    var map;
+    require([
+      "dijit/TooltipDialog", "dijit/popup","esri/symbols/TextSymbol",
+      "esri/renderers/SimpleRenderer","esri/Color","esri/TimeExtent",
+      "esri/layers/LabelClass","esri/symbols/PictureMarkerSymbol","esri/tasks/query","esri/tasks/QueryTask",
+      "esri/map", "esri/dijit/BasemapGallery", "esri/arcgis/utils", "esri/graphic", "esri/lang","dojo/dom",
+      "dojo/parser","./js/ThinLayer.js","esri/layers/FeatureLayer","dojo/dom-style","esri/dijit/TimeSlider",
+      "dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dijit/TitlePane",
       "dojo/domReady!"
-    ], function(dom,on,BasemapToggle,Map, camera, GraphicsLayer,Graphic,Point, MapView,FeatureLayer,
-      SimpleRenderer, PictureMarkerSymbol, TextSymbol,LabelClass,ObjectSymbol3DLayer,IconSymbol3DLayer, LabelLayer,PointSymbol3D, Legend,Home, domConstruct, CheckBox,esrirequest,esriConfig
+    ], function(
+      TooltipDialog, dijitPopup,TextSymbol, SimpleRenderer,Color,TimeExtent, LabelClass, PictureMarkerSymbol, Query,QueryTask, Map, BasemapGallery, arcgisUtils,Graphic, esriLang,dom,parser,ThinLayer,FeatureLayer,domStyle,TimeSlider
     ) {
+      parser.parse();
+      me = this;
 
-          me = this;
-
-          this.datalist = [];
-                 
-          var map = new Map({
-            basemap: "hybrid",
-            ground: "world-elevation",
-            showLabels : true
-          });
-          me.map = map;
-
-          var view = new MapView({
-            container: "viewDiv",
-            map: map,
-            showLabels : true,
-            // Indicates to create a local scene
-            viewingMode: "local",
-            // Allows for navigating the camera below the surface
-            constraints: {
-              collision: {
-                enabled: false
-              },
-              tilt: {
-                max: 179.99
-              }
-            },
-            // Turns off atmosphere and stars settings
-            environment: {
-              atmosphere: null,
-              starsEnabled: true
-            }
-          });
-
-      	  view.then(function() {
-      		   	view.goTo({
-      			  //target: view.graphics,
-      			  target: [48.18113445, 30.455],
-      			  heading: 0,
-      			  tilt: 60,
-      			  zoom:9
-      		});
-  		});
-     
-
-  	  //click listener  
-      view.on("click", function(event) {
-    		 var screenPoint = {
-    		  x: event.x,
-    		  y: event.y
-    		 };
-  		  // Search for graphics at the clicked location
-  		  view.hitTest(screenPoint).then(function(response) {
-  		    var result = response.results[0];
-
-  		    if (result) {
-  		      var lon = result.mapPoint.longitude;
-  		      var lat = result.mapPoint.latitude;
-
-  		      console.log("You click surface at (" + lon + ", " + lat + "), graphic:", result.graphic || "none");
-  		    }
-  		  });
-  		});
-
-      //move ui elements
-      view.ui.move([ "zoom","compass","navigation-toggle" ], "top-right");
-      view.ui.remove("compass");
-
-      var toggleB = new BasemapToggle({
-          //map: map,
-          view: view,
-          basemap: "topo",
-          nextBasemap: "topo" 
-        }, "BasemapToggle");
-      view.ui.add(toggleB, "bottom-left");
-
-      var gfsWindsLayer = new FeatureLayer({
-        url: "https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0?lodType=geohash&lod=2",
-        definitionExpression: "StartTime='2017-08-01T10:00:00'"
+      me.map = new Map("map", {
+        basemap: "topo",
+        center: [-105.255, 40.022],
+        zoom: 9,showLabels : true, minZoom:4
       });
 
+      me.map.on("load", initMap);
 
-      var gfsWindsLayerText = new FeatureLayer({
-        url: "https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0?lodType=geohash&lod=2",
-        definitionExpression: "StartTime='2017-08-01T10:00:00'"
+      var basemapGallery = new BasemapGallery({
+        showArcGISBasemaps: true,
+        map: me.map
+      }, "basemapGallery");
+      basemapGallery.startup();
+      
+      basemapGallery.on("error", function(msg) {
+        console.log("basemap gallery error:  ", msg);
       });
+
+     map.infoWindow.resize(245,125);
+
+      dialog = new TooltipDialog({
+        id: "tooltipDialog",
+        style: "position: absolute; width: 180px; font: normal normal normal 10pt Helvetica;z-index:100"
+      });
+      dialog.startup();
+
+      me.thinLayer = new ThinLayer({
+           displayOnPan : true,
+           map : me.map,
+           clusterSize : 40,
+           color : '#ff5',
+           features : []
+      });
+
+      me.map.addLayer(me.thinLayer);
 
       
-      var gfsWindsLayerLableRender = new SimpleRenderer({
-        symbol: new TextSymbol({
-          color:'white',
-          font: {  // autocast as esri/symbols/Font
-            size: 9,
-            family: "sans-serif"
-            //weight: "bolder"
-          },
-          text: "1.43",
-          xoffset: 0,
-          yoffset: -2        
-        })
-      });
-      var labelField = 'MAG';
-      var gfsWindsLayerText = new LabelLayer({ id: "labels" });
-      gfsWindsLayerText.addFeatureLayer(states, gfsWindsLayerLableRender, "{" + labelField + "}");
+      function mapExtentChange(){
 
-      gfsWindsLayer.renderer = new SimpleRenderer({
-        symbol: new PictureMarkerSymbol({
-          url: "iconblue.png",
-          width:50,
-          height:70         
-        }),
-        visualVariables: [{
-          type: "rotation",
-          field: "dir",
-          rotationType: "geographic"
-        }]
-      });
+        var query = new Query();
+        query.geometry = map.extent;
+        //query.where = "StartTime='2017-08-01T10:00:00'";
+        var timeExtent = map.timeExtent;
+        //query.timeExtent = timeExtent;
+        query.where = "StartTime>"+timeExtent.startTime.getTime() +" and StartTime<"+timeExtent.endTime.getTime();
+        query.returnGeometry = true;
+        query.outFields = ["*"];
+        var queryTask = new QueryTask("https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0" );
+        queryTask.execute(query, function(results){
+            me.thinLayer.setFeatures(results.features);
+        });
 
-      me.map.add(gfsWindsLayer);
-      me.map.add(gfsWindsLayerText);
-  });
-</script>
-</head>
-<body>
-  <div id="viewDiv">
+        dom.byId("daterange").innerHTML = "<i>" + timeExtent.startTime + " and " + timeExtent.endTime  + "<\/i>";
+      }
+
+      function initSlider(){
+          var timeSlider = new TimeSlider({
+            style: "width: 100%;"
+          }, dom.byId("timeSliderDiv"));
+          me.map.setTimeSlider(timeSlider);
+
+          var timeExtent = new TimeExtent();
+          timeExtent.startTime = new Date("8/1/2017");
+          timeExtent.endTime = new Date("8/3/2017");
+          timeSlider.setThumbCount(2);
+          timeSlider.createTimeStopsByTimeInterval(timeExtent, 179, "esriTimeUnitsMinutes");
+          timeSlider.setThumbIndexes([2,3]);
+          timeSlider.setThumbMovingRate(2000);
+          timeSlider.startup();
+          me.map.timeextent = timeExtent;
+          me.map.on("time-extent-change", mapExtentChange);
+      }
+
+      function initMap(){
+          
+          //Layers  to map
+          /*
+          me.gfsWindsLayer = new FeatureLayer("https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0",{
+            outFields: ["*"],useMapTime: true,
+            mode:FeatureLayer.MODE_ONDEMAND
+          });
+          me.gfsWindsLayer.setDefinitionExpression("StartTime='2017-08-01T10:00:00'");
+
+          me.gfsWindsLayer.on("update-end", function (d){
+            var listofFeatures = [];
+            for (var i = 0; i < gfsWindsLayer.graphics.length; i++) {
+              var gra = gfsWindsLayer.graphics[i];
+                 listofFeatures.push(gra);
+            }
+            me.thinLayer.setFeatures(listofFeatures);
+            
+          });
+
+          me.gfsWindsLayer.renderer = new SimpleRenderer({
+            symbol: new PictureMarkerSymbol({
+              url: "iconblue.png",
+              width:50,
+              height:70      
+            }),
+            visualVariables: [{
+              type: "rotationInfo",
+              field: "dir",
+              rotationType: "geographic"
+            }]
+          });
+
+          var iconLabel = new TextSymbol({
+            font: {  // autocast as esri/symbols/Font
+              size: 9,
+              family: "sans-serif"
+              //weight: "bolder"
+            },
+            xoffset: -31,
+            yoffset: -39   
+          });
+          //this is the very least of what should be set within the JSON  
+          var json = {
+            "labelExpressionInfo": {"value": "{mag}"},
+            "fieldInfos": [{fieldName: "mag",format: { "places": 1}}]
+          };
+          var txtColor = new Color("#fff");
+          iconLabel.setColor(txtColor);
+          var labelClass = new LabelClass(json);
+          labelClass.symbol = iconLabel; // symbol also can be set in LabelClass' json
+          me.gfsWindsLayer.setLabelingInfo([ labelClass ]);
+
+          //gfsWindsLayer.opacity = 0;
+          me.gfsWindsLayer.visible = false;
+          me.map.addLayer(me.gfsWindsLayer);
+          
+          */
+
+          me.map.graphics.enableMouseEvents();
+          initSlider();
+          me.map.on('extent-change', mapExtentChange);
+          mapExtentChange();
+
+          //mouseevent
+          me.thinLayer.on("mouse-over", function(evt){
+            var t = "<b>Wind Speed: </b>${mag:NumberFormat} m/s<br>"
+              + "<b>Wind Direction: </b>${dir:NumberFormat}°<br>";
+
+            var content = esriLang.substitute(evt.graphic.attributes,t);
+
+            dialog.setContent(content);
+
+            domStyle.set(dialog.domNode, "opacity", 0.75);
+            dijitPopup.open({
+              popup: dialog,
+              x: evt.pageX,
+              y: evt.pageY
+            });
+          });
+
+          me.thinLayer.on("mouse-out", function(evt){
+            dijitPopup.close();
+          });
+      }
+    });
+</script> 
+</head> 
+<body class="claro"> 
+  <div data-dojo-type="dijit/layout/BorderContainer" 
+       data-dojo-props="design:'headline', gutters:false" 
+       style="width:100%;height:100%;margin:0;">
+    <div id="map" 
+         data-dojo-type="dijit/layout/ContentPane" 
+         data-dojo-props="region:'center'" 
+         style="padding:0;">
+      <div id="bottomPanel">
+        <div id="timeInfo">
+          <div><span id="daterange"></span></div>
+          <div id="timeSliderDiv"></div>
+        </div>
+      </div>
+      <div style="position:absolute; right:20px; top:10px; z-Index:999;">
+        <div data-dojo-type="dijit/TitlePane" 
+             data-dojo-props="title:'Switch Basemap', open:false">
+          <div data-dojo-type="dijit/layout/ContentPane" style="width:380px; height:280px; overflow:auto;">
+            <div id="basemapGallery"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <div id="homeDiv">
-  </div>
-  <div id="BasemapToggle"></div>
-  <div id="sizeInputDiv">
-    <label>Size based on Result Value 
-      <input id="sizeInput" type="checkbox" checked="yes">
-    </label>
-    <br>
-    <br>
-    <label>
-      <select class="queryControls" data-dojo-props="maxHeight: 100;width:300px" style="width:265px"  data-dojo-attach-point="queryNameDropdown" id='queryNameDropdown' data-dojo-type="dijit/form/Select"></select>
-    </label>
-    <br>
-    <br>
-    <label>
-      <select class="queryControls" data-dojo-props="maxHeight: 100;width:300px" style="width:265px" data-dojo-attach-point="chemNameDropdown" id='chemNameDropdown' data-dojo-type="dijit/form/Select"></select>
-    </label>
-    <br>
-    <br>
-    <button data-dojo-type="dijit/form/Button" id="refreshDataID" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconCut', showLabel: true" type="button">Loading...</button>
-  </div>
-</body>
+</body> 
 </html>

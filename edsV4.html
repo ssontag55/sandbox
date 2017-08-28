@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="description" content="Analytical">
+  <title>OceansMap ESRI</title>
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    } 
+    #homeDiv {
+      right: 15px;
+      top: 160px;
+      z-index: 35;
+      position: absolute;
+    }
+    #sizeInputDiv {
+      position: absolute;
+      display: none;
+      top: 12px;
+      left: 12px;
+      padding: 12px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+    }
+  </style>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.4/esri/css/main.css">
+  <script src="https://js.arcgis.com/4.4/"></script>
+  <script>
+    require(["dojo/dom",
+      "dojo/on",
+      "esri/widgets/BasemapToggle",
+      "esri/Map",
+      "esri/layers/GraphicsLayer",
+      "esri/Graphic",
+      "esri/geometry/Point",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/renderers/SimpleRenderer",
+      "esri/symbols/PictureMarkerSymbol",
+      "esri/symbols/TextSymbol",
+      "esri/widgets/Home",
+      "dojo/dom-construct",
+      "dijit/form/CheckBox",
+      "esri/request",
+      "esri/config",
+      "./js/ThinLayer.js",
+      "dojo/domReady!"
+    ], function(dom,on,BasemapToggle,Map,GraphicsLayer,Graphic,Point, MapView,FeatureLayer,
+      SimpleRenderer,PictureMarkerSymbol, TextSymbol, Home, domConstruct, CheckBox,esrirequest,esriConfig,ThinLayer
+    ) {
+
+        me = this;
+
+        this.datalist = [];
+               
+        var map = new Map({
+          basemap: "topo",
+          ground: "world-elevation",
+          showLabels : true
+        });
+        me.map = map;
+
+        var view = new MapView({
+          container: "viewDiv",
+          map: map,
+          showLabels : true,
+          // Indicates to create a local scene
+          viewingMode: "local",
+          // Allows for navigating the camera below the surface
+          constraints: {
+            collision: {
+              enabled: false
+            },
+            tilt: {
+              max: 179.99
+            }
+          },
+          // Turns off atmosphere and stars settings
+          environment: {
+            atmosphere: null,
+            starsEnabled: true
+          },
+          popup: {
+            dockEnabled: true,
+            dockOptions: {
+              // Disables the dock button from the popup
+              buttonEnabled: false,
+              // Ignore the default sizes that trigger responsive docking
+              breakpoint: false,
+              position: 'top-left'
+            }
+          },
+        });
+
+        popup = view.popup;
+        popup.visible = true;
+
+    	  view.then(function() {
+    		   	view.goTo({
+      			  //target: view.graphics,
+      			  target: [48.18113445, 30.455],
+      			  heading: 0,
+      			  tilt: 60,
+      			  zoom:9
+      		  });
+            var centerPoint = view.center.clone();
+
+            popup.open({
+              title: "Wind Direction and Speed",
+              location: centerPoint,
+              content: "Click icon to find Wind value."
+            });
+
+            var thinLayer = new ThinLayer({
+               displayOnPan : true,
+               map : me.map,
+               clusterSize : 120,
+               color : '#ff5',
+               features : []
+            });
+          me.map.add(thinLayer);
+		  });
+   
+
+	  //click listener  
+    view.on("click", function(event) {
+  		 event.stopPropagation();
+
+       var screenPoint = {
+  		  x: event.x,
+  		  y: event.y
+  		 };
+
+       var centerPoint = view.center.clone();
+
+		  // Search for graphics at the clicked location
+		  view.hitTest(screenPoint).then(function(response) {
+		    var result = response.results[0];
+
+		    if (result) {
+		      var lon = result.mapPoint.longitude;
+		      var lat = result.mapPoint.latitude;
+		      
+          var datestring = new Date(result.graphic.attributes.StartTime);
+
+          view.popup.open({
+                title: datestring.toString(),
+                content: "<b>Wind Speed:  </b>"+ Number(result.graphic.attributes.mag).toPrecision(3)+" m/s <br> <b>Wind Direction: </b>"+Number(result.graphic.attributes.dir).toPrecision(3),
+                location: centerPoint
+            });
+          }
+  		  });
+  		});
+
+      //move ui elements
+      view.ui.move([ "zoom","compass","navigation-toggle" ], "top-right");
+      view.ui.remove("compass");
+
+      var toggleB = new BasemapToggle({
+          //map: map,
+          view: view,
+          basemap: "hybrid",
+          nextBasemap: "hybrid" 
+        }, "BasemapToggle");
+      view.ui.add(toggleB, "bottom-left");
+
+
+      //Layers  to map
+      var gfsWindsLayer = new FeatureLayer({
+        url: "https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0?lodType=geohash&lod=2",
+        definitionExpression: "StartTime='2017-08-01T10:00:00'",
+        outFields: ["*"]
+      });
+
+      var gfsWindsLayerText = new FeatureLayer({
+        url: "https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0?lodType=geohash&lod=2",
+        definitionExpression: "StartTime='2017-08-01T10:00:00'",
+        outFields: ["*"]
+      });
+
+      gfsWindsLayer.renderer = new SimpleRenderer({
+        symbol: new PictureMarkerSymbol({
+          url: "iconblue.png",
+          width:50,
+          height:70         
+        }),
+        visualVariables: [{
+          type: "rotation",
+          field: "dir",
+          rotationType: "geographic"
+        }]
+      });
+      me.map.add(gfsWindsLayer);
+
+      gfsWindsLayerText.renderer = new SimpleRenderer({
+        symbol: new TextSymbol({
+          color:'white',
+          font: {  // autocast as esri/symbols/Font
+            size: 9,
+            family: "sans-serif"
+            //weight: "bolder"
+          },
+          text: "[@mag]",
+          xoffset: -1,
+          yoffset: -3        
+        })
+      });
+
+
+      //me.map.add(thinLayer);
+  });
+</script>
+</head>
+<body>
+  <div id="viewDiv">
+  </div>
+  <div id="homeDiv">
+  </div>
+  <div id="BasemapToggle"></div>
+  <div id="sizeInputDiv">
+    <label>Size based on Result Value 
+      <input id="sizeInput" type="checkbox" checked="yes">
+    </label>
+    <br>
+    <br>
+    <label>
+      <select class="queryControls" data-dojo-props="maxHeight: 100;width:300px" style="width:265px"  data-dojo-attach-point="queryNameDropdown" id='queryNameDropdown' data-dojo-type="dijit/form/Select"></select>
+    </label>
+    <br>
+    <br>
+    <label>
+      <select class="queryControls" data-dojo-props="maxHeight: 100;width:300px" style="width:265px" data-dojo-attach-point="chemNameDropdown" id='chemNameDropdown' data-dojo-type="dijit/form/Select"></select>
+    </label>
+    <br>
+    <br>
+    <button data-dojo-type="dijit/form/Button" id="refreshDataID" data-dojo-props="iconClass:'dijitEditorIcon dijitEditorIconCut', showLabel: true" type="button">Loading...</button>
+  </div>
+</body>
+</html>
