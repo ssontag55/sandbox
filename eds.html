@@ -20,19 +20,24 @@
         margin-left: -500px;
         position: absolute; 
         bottom: 2.5em;
-      }
-
-      #timeInfo{
-        border-radius: 4px;
-        border: solid 2px #ccc;
-        background-color: #fff;
-        display: block;
-        padding: 5px;
-        position: relative;
-        text-align: center;
-        width: 1000px;
-        z-index: 99;
-      }
+    }
+    #timeInfo{
+      border-radius: 4px;
+      border: solid 2px #ccc;
+      background-color: #fff;
+      display: block;
+      padding: 5px;
+      position: relative;
+      text-align: center;
+      width: 600px;
+      z-index: 99;
+      float: left;
+    }
+    #layerInfo{
+      float: left;
+      padding-top: 26px;
+      margin-left: 52px;
+    }
   </style> 
   
   <script src="https://js.arcgis.com/3.21/"></script>
@@ -44,7 +49,7 @@
       "esri/layers/LabelClass","esri/symbols/PictureMarkerSymbol","esri/tasks/query","esri/tasks/QueryTask",
       "esri/map", "esri/dijit/BasemapGallery", "esri/arcgis/utils", "esri/graphic", "esri/lang","dojo/dom",
       "dojo/parser","./js/ThinLayer.js","esri/layers/FeatureLayer","dojo/dom-style","esri/dijit/TimeSlider",
-      "dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dijit/TitlePane",
+      "dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dijit/TitlePane","dijit/form/ComboBox",
       "dojo/domReady!"
     ], function(
       TooltipDialog, dijitPopup,TextSymbol, SimpleRenderer,Color,TimeExtent, LabelClass, PictureMarkerSymbol, Query,QueryTask, Map, BasemapGallery, arcgisUtils,Graphic, esriLang,dom,parser,ThinLayer,FeatureLayer,domStyle,TimeSlider
@@ -59,6 +64,8 @@
       });
 
       me.map.on("load", initMap);
+
+      me.urlPick = "https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0"
 
       var basemapGallery = new BasemapGallery({
         showArcGISBasemaps: true,
@@ -83,12 +90,35 @@
            map : me.map,
            clusterSize : 40,
            color : '#ff5',
-           features : []
+           features : [],
+           showGrid: true,
+           layerType:'winds'
       });
 
       me.map.addLayer(me.thinLayer);
 
-      
+      //Update Layer
+      var layerSelect = dijit.byId('drLayer');
+
+      layerSelect.on('change', function(evt) {
+          var layerOption = dijit.byId('drLayer').get('value');
+
+          if(String(layerOption).search('Current')> -1 ){
+
+              me.urlPick = "https://arc01.asascience.com/server/rest/services/Hosted/hycom-eds/FeatureServer/0";
+
+              var point = new esri.geometry.Point(8727274.141488284, 860986.6866042241, map.spatialReference);
+              map.centerAndZoom(point,7);
+              me.thinLayer.layerType = 'current';
+          }
+          //wind
+          else{
+              me.urlPick = "https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0";
+              me.thinLayer.layerType = 'winds';
+          }
+          mapExtentChange();
+      });
+
       function mapExtentChange(){
 
         var query = new Query();
@@ -99,7 +129,7 @@
         query.where = "StartTime>"+timeExtent.startTime.getTime() +" and StartTime<"+timeExtent.endTime.getTime();
         query.returnGeometry = true;
         query.outFields = ["*"];
-        var queryTask = new QueryTask("https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0" );
+        var queryTask = new QueryTask(me.urlPick);
         queryTask.execute(query, function(results){
             me.thinLayer.setFeatures(results.features);
         });
@@ -225,6 +255,12 @@
         <div id="timeInfo">
           <div><span id="daterange"></span></div>
           <div id="timeSliderDiv"></div>
+        </div>
+        <div id="layerInfo">
+          <select data-dojo-type="dijit/form/ComboBox" id="drLayer" name="layers">
+              <option>Currents - HYCOM</option>
+              <option selected>Winds - GFS</option>
+          </select>
         </div>
       </div>
       <div style="position:absolute; right:20px; top:10px; z-Index:999;">

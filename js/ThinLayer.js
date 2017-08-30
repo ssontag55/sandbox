@@ -9,10 +9,10 @@ define([
    'esri/geometry/Point',
    'esri/symbols/PictureMarkerSymbol',
    "esri/renderers/SimpleRenderer","esri/Color",
-   'esri/symbols/TextSymbol'
+   'esri/symbols/TextSymbol',"esri/symbols/SimpleFillSymbol","esri/graphicsUtils"
    ],
 
-   function(declare, array, lang, Color, GraphicsLayer, Graphic, Extent, Point, PictureMarkerSymbol, SimpleRenderer,Color,TextSymbol) {
+   function(declare, array, lang, Color, GraphicsLayer, Graphic, Extent, Point, PictureMarkerSymbol, SimpleRenderer,Color,TextSymbol,SimpleFillSymbol,graphicsUtils) {
       
       var thinLayer = declare('ThinLayer', [GraphicsLayer], {
 
@@ -28,6 +28,10 @@ define([
          me.clusterSize = options.clusterSize || 100;
 
          me.color = options.color || '#ff0000';
+
+         me.layerType = options.type || 'winds';
+
+         me.showGrid = options.showGrid || false;
          
          //base connections to update clusters during user/map interaction
          //me._map.on('zoom-start', lang.hitch(me, me._handleMapZoomStart));
@@ -64,7 +68,7 @@ define([
          if (this._map.infoWindow.isShowing)
             this._map.infoWindow.hide();
          this.clear();
-         this.clusterFeatures();
+         this.thinFeatures();
       },
 
       //on update
@@ -83,7 +87,7 @@ define([
          array.forEach(features, function(feature) {
             me._features.push(feature);
          }, me);
-         me.clusterFeatures();
+         me.thinFeatures();
       },
 
       //set color
@@ -91,13 +95,17 @@ define([
          this.color = color;
       },
 
+      showGrid : function(grid) {
+         this.showGrid = grid;
+      },
+
       //fires when cluster layer is loaded, but not added to map yet.
       _handleLayerLoaded : function() {
-         //this.clusterFeatures();
+         //this.thinFeatures();
       },
       
       // cluster features
-      clusterFeatures : function() {
+      thinFeatures : function() {
          
          this.clear();
          var features = this._features;
@@ -116,127 +124,153 @@ define([
                   mapExt = mapExt.union(normExts[j]);
                }
             }
+
+            this._map.graphics.clear();
+            var symbol = new SimpleFillSymbol().setColor(null).outline.setColor([150,150,150,0.2]);//gray
+            
             //var mapExt = this._map.extent;
             var o = new Point(mapExt.xmin, mapExt.ymax, sr);
+            var pointsExtent = graphicsUtils.graphicsExtent(features);
+            //var o = new Point(pointsExtent.xmin, pointsExtent.ymax, sr);
+            
+            //change grid size based on zoom level
+            var zoomLevel = 0;
+            if(this._map.getLevel() == 7){
+               clusterSize = 120;
+            }
+
+            if(this.layerType =='current'){
+
+               if(this._map.getLevel() == 9){
+                  clusterSize = 140;
+               }
+               else if(this._map.getLevel() == 8){
+                  clusterSize = 120;
+               }
+               else if(this._map.getLevel() == 7){
+                  clusterSize = 100;
+               }
+            }
+
+
+            if(this._map.getLevel() == 6){
+               clusterSize = 85;
+               zoomLevel = 2;
+            }
+            else if(this._map.getLevel()== 5){
+               clusterSize =115;
+               zoomLevel = 3;
+            }
+            else if(this._map.getLevel()== 4){
+               clusterSize = 140;
+               zoomLevel = 4;
+            }
+            else if(this._map.getLevel()== 3){
+               clusterSize = 160;
+               zoomLevel = 5;
+            }
 
             var rows = Math.ceil(this._map.height / clusterSize);
             var cols = Math.ceil(this._map.width / clusterSize);
             var distX = mapExt.getWidth() / this._map.width * clusterSize;
-            var distY = mapExt.getHeight() / this._map.height * clusterSize;  
-
-            var zoomLevel = Math.abs(this._map.getLevel()-10);
-            if(this._map.getLevel()> 7){
-               zoomLevel = 0;
-            }
+            var distY = mapExt.getHeight() / this._map.height * clusterSize; 
                      
             var cGraphics = [];
 
-            for (var c = 0; c < cols; c++) {
-               for (var r = 0; r < rows; r++) {
-                  var x1 = o.x + (distX * c);
-                  var y2 = o.y - (distY * r);
-                  var x2 = x1 + distX;
-                  var y1 = y2 - distY;
-
-                  var ext = new Extent(x1, y1, x2, y2, sr);
-
-                  var loadedyet = false;
-                  for (var i = 0, len = features.length; i < len; i++) {
-                     
-                     var feature = features[i];
-                     if (ext.contains(feature.geometry)) {
-                        if(loadedyet == false){
-                           cGraphics.push(feature);
-                           loadedyet = true;
-                        }
-                     }
-                     //i = i +1;
-                  }
-                  //c = c +zoomLevel;
-                  /*if (cGraphics.length > 0) {
-                     var cPt = this._getClusterCenter(cGraphics);
-                     thinGraphics.push({
-                        center : cPt,
-                        graphics : cGraphics
-                     });
-                  }*/
+            //show all data when zoomed in
+            if(this._map.getLevel() >7 && this.layerType !='current'){
+                  
+               for (var i = 0, len = features.length; i < len; i++) 
+               {
+                  cGraphics.push(features[i]);  
                }
-               //r = r +zoomLevel;
+            }
+            else if(this._map.getLevel() > 10 && this.layerType =='current'){
+                  
+               for (var i = 0, len = features.length; i < len; i++) 
+               {
+                  cGraphics.push(features[i]);  
+               }
+            }
+            else{
+                  //rows = 1;
+                  for (var r = 0; r < rows; r++) {
+                     for (var c = 0; c < cols; c++) {
+                        var x1 = o.x + (distX * c);
+                        var y2 = o.y - (distY * r);
+                        var x2 = x1 + distX;
+                        var y1 = y2 - distY;
+
+                        var ext = new Extent(x1, y1, x2, y2, sr);
+
+                        if(this.showGrid == true){
+                           var location = new Graphic(ext,symbol);
+                           this._map.graphics.add(location);
+                        }
+
+                        var layeradded = false;
+                        var tempFeature;
+                        for (var i = 0, len = features.length; i < len; i++) {
+                           
+                           var feature = features[i];
+                           if (ext.contains(feature.geometry)) {
+                              //add first one
+                              if(layeradded == false){
+                                 layeradded = true;
+                                 tempFeature = feature;
+                              }
+                              //then compare all else to that one
+                              else{
+                                  if((tempFeature.geometry.x <= feature.geometry.x) && (tempFeature.geometry.y >= feature.geometry.y)){
+                                    tempFeature = feature;
+                                 }
+                              }                              
+                           }
+
+                           //skip some values when you are zoomed way out
+                           //speeds it up but it is doesn't align alright
+                           //i = i +zoomLevel;
+                        }
+                        cGraphics.push(tempFeature);                       
+
+                        //c = c +1;
+                     }
+                     //r = r +zoomLevel;
+                  }
             }
 
             thinGraphics.push({
                graphics : cGraphics
-            });
-
-            /*var zoomLevel = this._map.getZoom();
-            var thinGraphics = [];
-
-            var cGraphics = [];
-            //Stride tolerance
-            if(zoomLevel<8){
-               //var indexSkip = features.length/1000;  //this._map.width / (zoomLevel*100);
-               var indexColumn = 0;   
-               for (var i = 0, len = features.length; i < len; i++) {
-                  
-                  var feature = features[i];
-               
-                  if(feature.geometry.y == column){
-
-                     if(indexColumn % 10 == 0){
-                        cGraphics.push(feature);   
-                     }                     
-                     indexColumn++;
-                  }
-                  else{
-                     //cGraphics.push(feature);
-                     indexColumn = 0;
-                  }
-
-                  var column = feature.geometry.y;
-                  
-                  //i = parseInt(indexSkip)+i;
-               }
-               thinGraphics.push({
-                  graphics : cGraphics
-               });
-            }
-            else{
-               for (var i in features) {
-                  var feature = features[i];
-                  
-                  cGraphics.push(feature);
-               }
-               thinGraphics.push({
-                  graphics : cGraphics
-               }); 
-            } */                            
+            });                           
 
             //add cluster to map
             for (var g in thinGraphics[0].graphics) {
                var thinGraphic = thinGraphics[0].graphics[g];
                
-               var symbolPic = new PictureMarkerSymbol({
+               if(thinGraphic){
+                  var symbolPic = new PictureMarkerSymbol({
                     url: "iconblue.png",
                     width:50,
                     height:70,
                     angle: thinGraphic.attributes.dir      
                   });
 
-               var iconLabel = new TextSymbol({
-                  font: {  // autocast as esri/symbols/Font
-                    size: 9,
-                    family: "sans-serif"
-                    //weight: "bolder"
-                  },
-                  text: Number(thinGraphic.attributes.mag).toPrecision(2),
-                  xoffset: 0,
-                  yoffset: -3   
-                });
-               var txtColor = new Color("#fff");
-               iconLabel.setColor(txtColor);
+                  var iconLabel = new TextSymbol({
+                     font: {  // autocast as esri/symbols/Font
+                       size: 9,
+                       family: "sans-serif"
+                       //weight: "bolder"
+                     },
+                     text: Number(thinGraphic.attributes.mag).toPrecision(2),
+                     xoffset: 0,
+                     yoffset: -3   
+                   });
+                  var txtColor = new Color("#fff");
+                  iconLabel.setColor(txtColor);
 
-               this.add(new Graphic(thinGraphic.geometry, symbolPic,thinGraphic.attributes));
-               this.add(new Graphic(thinGraphic.geometry, iconLabel,thinGraphic.attributes));
+                  this.add(new Graphic(thinGraphic.geometry, symbolPic,thinGraphic.attributes));
+                  this.add(new Graphic(thinGraphic.geometry, iconLabel,thinGraphic.attributes));
+               }
             }
          }
       },
