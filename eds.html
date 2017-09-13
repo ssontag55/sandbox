@@ -41,6 +41,7 @@
   </style> 
   
   <script src="https://js.arcgis.com/3.21/"></script>
+  <script src="./js/windy.js"></script>
   <script> 
     var map;
     require([
@@ -48,24 +49,30 @@
       "esri/renderers/SimpleRenderer","esri/Color","esri/TimeExtent",
       "esri/layers/LabelClass","esri/symbols/PictureMarkerSymbol","esri/tasks/query","esri/tasks/QueryTask",
       "esri/map", "esri/dijit/BasemapGallery", "esri/arcgis/utils", "esri/graphic", "esri/lang","dojo/dom",
-      "dojo/parser","./js/ThinLayer.js","esri/layers/FeatureLayer","dojo/dom-style","esri/dijit/TimeSlider",
+      "dojo/parser","./js/ThinLayer.js","./js/RasterLayer.js","esri/layers/FeatureLayer","dojo/dom-style","esri/dijit/TimeSlider","dojo/request",
       "dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dijit/TitlePane","dijit/form/ComboBox",
       "dojo/domReady!"
     ], function(
-      TooltipDialog, dijitPopup,TextSymbol, SimpleRenderer,Color,TimeExtent, LabelClass, PictureMarkerSymbol, Query,QueryTask, Map, BasemapGallery, arcgisUtils,Graphic, esriLang,dom,parser,ThinLayer,FeatureLayer,domStyle,TimeSlider
-    ) {
+      TooltipDialog, dijitPopup,TextSymbol, SimpleRenderer,Color,TimeExtent, LabelClass, PictureMarkerSymbol, Query,QueryTask, Map, BasemapGallery, arcgisUtils,Graphic, esriLang,dom,parser,ThinLayer,RasterLayer,FeatureLayer,domStyle,TimeSlider,request
+      ) 
+    {
+
       parser.parse();
       me = this;
 
       me.map = new Map("map", {
         basemap: "topo",
-        center: [-105.255, 40.022],
-        zoom: 9,showLabels : true, minZoom:4
+        center: [-73.255, 40.022],
+        zoom: 8,showLabels : true, minZoom:4
       });
 
       me.map.on("load", initMap);
 
-      me.urlPick = "https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0"
+      me.urlPick = "https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0";
+
+      me.gfsflow = 'https://dr.coastmap.com/edsrest/data/rpstest?';
+
+      me.canvasSupport = supports_canvas();
 
       var basemapGallery = new BasemapGallery({
         showArcGISBasemaps: true,
@@ -137,6 +144,47 @@
         dom.byId("daterange").innerHTML = "<i>" + timeExtent.startTime + " and " + timeExtent.endTime  + "<\/i>";
       }
 
+      function updateGFSFlow(){
+
+        me.rasterLayer = new RasterLayer(null, {
+          opacity: 0.55
+        });
+        
+        me.map.addLayer(rasterLayer);
+
+        me.map.on("extent-change", redraw);
+        me.map.on("zoom-start", redraw);
+        me.map.on("pan-start", redraw);
+
+        var urlFlow = me.gfsflow + "layerName=GFS_WINDS&date=2017-09-13T13:00&top=90&bottom=-90&left=-180&right=180&requestType=leafletVelocity&returnType=Vector";
+
+        request.get(urlFlow, {
+            
+            headers: {
+                "api-key":"v5pinTR7KN54seHLFipZYxgqk7tOdGDcl1GGrZ8rFbE="
+            },
+              handleAs: "json"
+            }).then(function(text){
+              me.windy = new Windy({ canvas: rasterLayer._element, data: text });
+              redraw();
+            });
+      }
+
+      function redraw(){
+          me.rasterLayer._element.width = map.width;
+          me.rasterLayer._element.height = map.height;
+          me.windy.stop();
+          var extent = map.geographicExtent;
+          setTimeout(function(){
+            me.windy.start(
+              [[0,0],[map.width, map.height]],
+              map.width,
+              map.height,
+              [[extent.xmin, extent.ymin],[extent.xmax, extent.ymax]]
+            );
+          },500);
+        }
+
       function initSlider(){
           var timeSlider = new TimeSlider({
             style: "width: 100%;"
@@ -156,7 +204,36 @@
       }
 
       function initMap(){
+
+          //add flow layer
+          updateGFSFlow();
           
+          me.map.graphics.enableMouseEvents();
+          initSlider();
+          me.map.on('extent-change', mapExtentChange);
+          mapExtentChange();
+
+          //mouseevent
+          me.thinLayer.on("mouse-over", function(evt){
+            var t = "<b>Wind Speed: </b>${mag:NumberFormat} m/s<br>"
+              + "<b>Wind Direction: </b>${dir:NumberFormat}°<br>";
+
+            var content = esriLang.substitute(evt.graphic.attributes,t);
+
+            dialog.setContent(content);
+
+            domStyle.set(dialog.domNode, "opacity", 0.75);
+            dijitPopup.open({
+              popup: dialog,
+              x: evt.pageX,
+              y: evt.pageY
+            });
+          });
+
+          me.thinLayer.on("mouse-out", function(evt){
+            dijitPopup.close();
+          });
+
           //Layers  to map
           /*
           me.gfsWindsLayer = new FeatureLayer("https://arc01.asascience.com/server/rest/services/Hosted/gfs-eds/FeatureServer/0",{
@@ -211,35 +288,14 @@
           //gfsWindsLayer.opacity = 0;
           me.gfsWindsLayer.visible = false;
           me.map.addLayer(me.gfsWindsLayer);
-          
           */
-
-          me.map.graphics.enableMouseEvents();
-          initSlider();
-          me.map.on('extent-change', mapExtentChange);
-          mapExtentChange();
-
-          //mouseevent
-          me.thinLayer.on("mouse-over", function(evt){
-            var t = "<b>Wind Speed: </b>${mag:NumberFormat} m/s<br>"
-              + "<b>Wind Direction: </b>${dir:NumberFormat}°<br>";
-
-            var content = esriLang.substitute(evt.graphic.attributes,t);
-
-            dialog.setContent(content);
-
-            domStyle.set(dialog.domNode, "opacity", 0.75);
-            dijitPopup.open({
-              popup: dialog,
-              x: evt.pageX,
-              y: evt.pageY
-            });
-          });
-
-          me.thinLayer.on("mouse-out", function(evt){
-            dijitPopup.close();
-          });
       }
+
+      // does the browser support canvas?
+      function supports_canvas() {
+        return !!document.createElement("canvas").getContext;
+      }
+
     });
 </script> 
 </head> 
