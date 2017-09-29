@@ -1,0 +1,105 @@
+{
+    "$id": "1",
+    "Data": [ {
+        "$id": "2",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "Wastewater control room",
+        "RowTimestamp": 5479279,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:16:15.347",
+        "RecordId": 119746
+    }, {
+        "$id": "3",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "CLC-38D",
+        "RowTimestamp": 5479278,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:16:07.723",
+        "RecordId": 119745
+    }, {
+        "$id": "4",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "CLC-37D",
+        "RowTimestamp": 5479277,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:15:59.41",
+        "RecordId": 119744
+    }, {
+        "$id": "5",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "CLC-36D",
+        "RowTimestamp": 5479276,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:15:47.52",
+        "RecordId": 119743
+    }, {
+        "$id": "6",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "CLC-35D",
+        "RowTimestamp": 5479275,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:15:38.99",
+        "RecordId": 119742
+    }, {
+        "$id": "7",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "CLC-34D",
+        "RowTimestamp": 5479274,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:15:30.943",
+        "RecordId": 119741
+    }, {
+        "$id": "8",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "CLC-33D",
+        "RowTimestamp": 5479273,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:15:24.083",
+        "RecordId": 119740
+    }, {
+        "$id": "9",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "CLC-32D",
+        "RowTimestamp": 5479272,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:15:16.02",
+        "RecordId": 119739
+    }, {
+        "$id": "10",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "CLC-31",
+        "RowTimestamp": 5479271,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:15:08.177",
+        "RecordId": 119738
+    }, {
+        "$id": "11",
+        "CreatedByFullName": "System Administrator",
+        "TenantId": 1180,
+        "ReportGroupId": 1e3,
+        "Value": "CLC-30",
+        "RowTimestamp": 5479270,
+        "CreatedBy": 1e3,
+        "CreatedDate": "2016-05-26T16:15:00.363",
+        "RecordId": 119737
+    } ],
+    "Total": 41
+}

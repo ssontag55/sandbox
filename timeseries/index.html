@@ -1,0 +1,604 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="description" content="Timeseries">
+  <title>Analytical Time Series</title>
+  <link rel="stylesheet" href="leaflet.css">
+  <script src="jquery-3.1.1.min.js"></script>
+  <script src="leaflet.min.js"></script>
+  <script src="Leaflet.MakiMarkers.js"></script>
+  <script src="esri-leaflet.js"></script>
+  <link href="kendo.common.min.css" rel="stylesheet" />
+  <script src="kendo.all.min.js"></script>
+  <style>
+    html,
+    body,
+    #parentdiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+      position: fixed;
+    } 
+    #viewDiv{
+      height: calc(100% - 210px);
+    }    
+    #homeDiv {
+      right: 15px;
+      top: 160px;
+      z-index: 35;
+      position: absolute;
+    }
+    #sizeInputDiv {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 12px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+    }
+    #basemaps-wrapper {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 400;
+      background: white;
+      padding: 10px;
+    }
+    #basemaps {
+      margin-bottom: 5px;
+    }
+    #interp_legend{
+      background:white !important;
+      font-size:13px  !important;
+      padding:10px  !important;
+    }
+    #interp_legend i {
+        width: 14px;
+        height: 15px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.7;
+    }
+    .leaflet-popup-content-wrapper {
+	    background: #7ea700!important;
+	    color: #fff!important;
+	    height: 134px;
+	}
+  </style>
+</head>
+<body>
+  <div id="parentdiv">
+    <div id="viewDiv">
+    </div>
+    <div id='timeserieschartDiv' style="position: absolute; 
+    bottom: 0; 
+    width: 100%; 
+    height: 210px;">
+    </div>
+  </div>
+  <div id="homeDiv">
+  </div>
+  <div id="BasemapToggle"></div>
+  <div id="sizeInputDiv">
+    <label>Select location on Map to generate Time Series 
+    </label>
+    <br>
+    <br>
+    <div style="float: left;padding-right: 13px;">
+      <input type="checkbox" id="fencelineLocs" checked>
+      <label for="fencelineLocs">Fenceline Monitoring</label>
+    </div> 
+    <br>
+    <br>
+    <div style="float: left;padding-right: 13px;">
+      <input type="checkbox" id="descLocs">
+      <label for="descLocs">Fenceline Discretionary Locations</label>
+    </div> 
+    <br>  
+    <br>
+    <div>
+      <select class="queryControls" style="width:265px;" id='chemNameDropdown' ></select>
+    </div>
+    <br>
+    <label style="color:#3f93a6;font-size: 17px;font-weight: bold;" id="rollingavg">Adjust timeslider to find Average</label>
+    <!-- <button id="refreshDataID" style="width: 148px;">Loading...</button> -->
+    <img src="../indeterminate.gif" id="loadinggf" style="float:right;">
+    <!-- <div>
+      <select class="queryControls" style="width:265px;" id='queryNameDropdown'></select>
+    </div>-->
+  </div>
+  <div id="basemaps-wrapper" class="leaflet-bar">
+    <select name="basemaps" id="basemaps" onChange="changeBasemap(basemaps)">
+      <option value="Imagery">Imagery</option>
+      <option value="Topographic">Topographic</option>
+      <option value="Streets">Streets</option>
+      <option value="Oceans">Oceans</option>
+      <option value="Gray">Gray</option>
+      <option value="DarkGray">Dark Gray</option>
+      <option value="ShadedRelief">Shaded Relief</option>
+    </select>
+  </div>
+  <script>
+    
+    //var tenantId= @Session["TenantId"];
+    startupMap();
+    
+    function startupMap(){
+
+	      me = this;
+
+	      this.datalist = [];
+        this.desclist = [];
+        this.fencelist = [];
+        this.datatochart = [];
+        this.mapPointsFence;
+        this.mapPointsDec;
+
+	      me.map = L.map('viewDiv').setView([30.458,-91.1811], 15);
+	      me.layer = L.esri.basemapLayer('Imagery').addTo(map);
+
+	      map.on('load', function () {
+	          mapLoaded = true;
+	      });
+	      map.zoomControl.setPosition('bottomleft');
+
+	      getGroupList1();
+
+	      //$("#chemNameDropdown").on('change', me.refreshData);
+        //$("#refreshDataID").on('click', me.showTimeSeries);
+	      $("#descLocs").click(me.updateDescPoints);
+        $("#fencelineLocs").click(me.updateFencePoints);
+    }
+
+    //Descretionary points
+    function getGroupList1(){
+
+        //var reqUrl = 'https://live.terrabase.com/api/Tenant/1180/CustomGroup/1001/Records?sort=&page=1&pageSize=100&group=&filter=';
+        var reqUrl = "descpoints.json";
+
+        $.ajax({
+            type: "GET",
+            async: true,
+            url: reqUrl,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json"
+        })
+        .fail(function (error) {
+            console.log(error);
+            alert("Service Error For Requested Group layer 1");
+        })
+        .done(function (data) {
+          if(data.Data.length > 0){
+
+              me.desclist = data.Data;
+          }
+
+          getGroupList2();
+        });
+    }
+
+    //Fenceline Points points
+    function getGroupList2(){
+
+        //var reqUrl = 'https://live.terrabase.com/api/Tenant/1180/CustomGroup/1000/Records?sort=&page=1&pageSize=100&group=&filter=';
+        var reqUrl = "fencepoints.json";
+
+        $.ajax({
+            type: "GET",
+            async: true,
+            url: reqUrl,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json"
+        })
+        .fail(function (error) {
+            console.log(error);
+            alert("Service Error For Requested Group layer 2");
+        })
+        .done(function (data) {
+          if(data.Data.length > 0){
+
+            me.fencelist = data.Data;
+          }
+          getQueryList();
+        });
+    }
+
+    function getQueryList(){
+
+      //var reqUrl = "https://live.terrabase.com/api/Tenant/"+tenantId+"/Map/Locations/BBox/-180/85/180/-85/GeoJSON";
+      var reqUrl = "points.json";
+
+      $.ajax({
+            type: "GET",
+            async: true,
+            url: reqUrl,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json"
+        })
+        .fail(function (error) {
+            console.log(error);
+            alert("Service Error For Requested Chemicals");
+        })
+        .done(function (data) {
+
+          if(data.features.length > 0){
+
+            me.datalist = data.features;
+
+            var newfeaturesDesc = {"features":[],"type":"FeatureCollection","id":1010};
+            var newfeaturesFence = {"features":[],"type":"FeatureCollection","id":1010};
+            for (var group in data.features){ 
+               //$("#queryNameDropdown").append($('<option></option>').val(data.features[group].properties.id).html(data.features[group].properties.title));
+               for (var item in me.fencelist){ 
+                  if(data.features[group].properties.title == me.fencelist[item].Value){
+                    newfeaturesFence.features.push(data.features[group]);
+                  }
+               }
+               for (var item2 in me.desclist){ 
+                  if(data.features[group].properties.title == me.desclist[item2].Value){
+                    newfeaturesDesc.features.push(data.features[group]);
+                  }
+               }
+            }
+          }
+
+          updateMapPointsFence(newfeaturesFence);
+          updateMapPointsDesc(newfeaturesDesc);
+
+	        //addpointclickListener(locationPointLayer,showall);
+          //$("#refreshDataID").html("Time Series");  
+      		$("#loadinggf").hide();
+      });
+    }
+
+    function refreshData(id){
+      	
+      	//var listfieldURL = "https://live.terrabase.com/api/Tenant/1180/Report/Custom/ChemsPerLocation?sort=&group=&filter=&locationIds="+id;
+      	var listfieldURL = "chems.json";
+
+      	if(id.type){
+      		id = document.getElementById('queryNameDropdown').value;
+      	}
+        //var dataget = { locationIds: id }; 
+
+        $.ajax({
+            type: "GET",
+            async: true,
+            url: listfieldURL,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json"
+        })
+        .fail(function (error) {
+            console.log(error);
+            alert("Service Error For Requested Chemicals");
+        })
+        .done(function (data) {
+
+          $("#chemNameDropdown").empty();
+          if(data.length > 0){
+
+            for (var group in data){ 
+                 
+                 $("#chemNameDropdown").append($('<option></option>').val(data[group].id).html(data[group].val));
+              }
+            }
+	    });
+
+      /* Not used yet
+      $("#param_dropdown").kendoDropDownList({
+          dataSource: fieldDataSource,
+          suggest:true,
+          filter:'contains',
+          dataTextField: "val",
+          dataValueField: "id"
+          //index: 87 //default to benzene
+      });*/
+
+      //add no value
+      //$('#exceedance_dropdown').data("kendoDropDownList").dataSource.add({"text": "None", "value": 0});
+      //$('#exceedance_dropdown').data("kendoDropDownList").select(1);
+    }
+
+    function updateDescPoints(c){
+
+      if(c.currentTarget.checked == true){
+          map.addLayer(me.mapPointsDec);
+          map.fitBounds(me.mapPointsDec.getBounds()); 
+      }
+      else{
+          map.removeLayer(me.mapPointsDec);
+      }
+    }
+
+    function updateMapPointsDesc(features){
+
+        me.mapPointsDec = L.geoJson(features, {
+
+            pointToLayer: function (feature, latlng) {
+                  var bicon = L.MakiMarkers.icon({ icon: 'circle', color: "#ccc", size: "m" });
+                  return L.marker(latlng, {icon: bicon});//.bindLabel(feature.properties.title);
+            },
+            onEachFeature: function (feature, layer) {  
+                
+                addpopupwindow(feature, layer); 
+                layer.on('click', function (e) {
+                    var id = feature.properties.id;   
+
+                    refreshData(id);
+                });           
+            }
+        });
+    }
+
+    function updateFencePoints(c){
+
+      if(c.currentTarget.checked == true){
+          //add layer
+          map.addLayer(me.mapPointsFence);
+          map.fitBounds(me.mapPointsFence.getBounds()); 
+      }
+      else{
+          map.removeLayer(me.mapPointsFence);
+      }
+    }
+
+    function updateMapPointsFence(features){
+
+        me.mapPointsFence = L.geoJson(features, {
+
+            pointToLayer: function (feature, latlng) {
+                  var bicon = L.MakiMarkers.icon({ icon: 'circle', color: "#7ea700", size: "m" });
+                  return L.marker(latlng, {icon: bicon});//.bindLabel(feature.properties.title);
+            },
+            onEachFeature: function (feature, layer) {  
+                
+                addpopupwindow(feature, layer); 
+                layer.on('click', function (e) {
+                    var id = feature.properties.id;   
+
+                    refreshData(id);
+                });           
+            }
+        });
+        
+        map.addLayer(me.mapPointsFence);
+        map.fitBounds(me.mapPointsFence.getBounds()); 
+    }
+
+    function addpopupwindow(feature, layer2update){
+        
+        var fid = feature.properties.id;
+        var ftitle = feature.properties.title;
+
+        var customOptions =
+        {
+            'minWidth': '140',
+            'maxWidth': '230',
+            'maxHeight': '180'
+        }
+
+        var html ='';
+                        
+        var paneledHtml;
+                        
+        html += "<b>Lat:</b> " + Number(feature.geometry.coordinates[1]).toPrecision(5) + " <b> Lon:</b> "+ Number(feature.geometry.coordinates[0]).toPrecision(5);
+                        
+        html += "<br /><br /><button type='button' id='wizOptBtn' value='"+fid+"' title='all' name='"+ftitle+"' class='k-button' onclick='plotTimeSeries(this,true);'><i class='fa fa-pie-chart'></i> Plot Timeseries</button>";
+        paneledHtml = "<h4 style='max-width:232px'>" + ftitle +' ('+feature.properties.site+ ")</h4>";  
+        html += "<div style='font-weight:bold;max-height:210px;color:coral' id='timeseriesDiv-"+fid+"'></div><br />";
+               
+        paneledHtml +='<div>'+html+'</div>';
+        paneledHtml +="</div>";
+                        
+        layer2update.bindPopup(paneledHtml,customOptions);
+    }
+
+    function showTimeSeries(){
+        //plotTimeSeries();
+    }
+
+    function plotTimeSeries(d,queryLayer,queryid){
+                 
+        //var id = document.getElementById('chemNameDropdown').value;
+        
+        //$('#timeserieschartDiv').empty();
+        
+        var stationname = d.name;
+        var stationid = Number(d.value);
+
+        var fieldVal = document.getElementById('chemNameDropdown').value;
+        var fieldText = document.getElementById('chemNameDropdown').text;
+
+        //no value
+        //var exceedVal = $("#exceedance_dropdown").data("kendoDropDownList").value();
+        exceedVal = '';
+
+        var postdata = [
+        {
+            Key:"cas_idValue",
+            Value:[
+               {
+                   id:fieldVal,
+                   val:fieldText
+               }
+            ]
+        },
+         {
+             Key:"location_idValue",
+             Value:[
+            {
+                id:stationid,
+                val:stationname
+            }]
+         }
+        ];
+
+        //        var tenantId = 1000;
+        var portletId = 1004;
+
+        //https://live.terrabase.com/api/Tenant/1180/Portlet/1004/Data?data=[{"Key":"cas_idValue","Value":[{"id":"7","val":"Benzene"}]},{"Key":"location_idValue","Value":[{"id":61346,"val":"325-44"}]}]
+        //var url = "/api/Tenant/"+selectedTid+"/Portlet/"+portletId+"/Data?data="+encodeURIComponent(JSON.stringify(postdata));
+
+        var url = "timeseries.json";
+
+        $.ajax({
+            type: "GET",
+            traditional: true,
+            contentType: "application/json; charset=utf-8",
+            url: url,
+            dataType: "json",
+        })
+        .fail(function () {
+            alert(" Error Rendering Chart!", "error");
+        })
+        .done(function (data) {
+            
+            data = JSON.stringify(data);
+
+            if(data.search('Sequence ')>-1){
+                alert(" Error Accesssing Data", "error");
+            }
+            else{
+                if(String(data).toUpperCase().search('ERROR')>-1){
+                    alert(" An Error Returned from the Database", "error");
+                }
+                else{
+                    var datatochart = JSON.parse(data);
+
+                    var datatochart =  JSON.parse(datatochart);
+                    me.datatochart = datatochart;
+                    ///TODO need to change field names
+                    if(datatochart.length==1){
+                        
+                        if(datatochart[0].result){
+                            $('#timeserieschartDiv').text("One Value Found:   "+datatochart[0].sample_dt + ': '+ datatochart[0].result +'  ' +datatochart[0].conc);
+                        }
+                        else if(datatochart[0].f45){
+                            $('#timeserieschartDiv').text("One Value Found:   "+datatochart[0].f6 + ': '+ datatochart[0].f70 +'  ' +datatochart[0].f72);
+                        }
+                        else{
+                            $('#timeserieschartDiv').text(" Data Format not found. ");
+                        }
+                    }
+                    //else if(datatochart.length>1){
+                    else{
+                        
+                        if(datatochart[0].f45){
+                            //$('#timeserieschartDiv').text("One Value Found:   "+datatochart[0].f6 + ': '+ datatochart[0].f70 +'  ' +datatochart[0].f72);
+
+                            datatochart.sort(function(a,b){
+                                // sort date column
+                                return new Date(a.f6) - new Date(b.f6);
+                            });
+
+                            $("#timeserieschartDiv").kendoChart({
+                                dataSource: datatochart,
+                                series: [{
+                                    type: "line",
+                                    field: "f70",
+                                    //axis: 'dataresult',
+                                    name: datatochart[0].f45
+                                }],
+                                legend: { position: "bottom" },
+                                categoryAxis: {
+                                    field: "f6",  
+                                    type: "Date",
+                                    labels: { 
+                                        dateFormats:
+                                          {
+                                              minutes: "HH:mm",
+                                              hours: "HH:mm",
+                                              days: "MM/dd/yy",
+                                              months: "MMM 'yy",
+                                              years: "YYYY"
+                                          },
+                                        step: 365
+                                    },
+                                    visible:true,
+                                    baseUnit: "days",
+                                    minorTicks: {
+                                        visible: false
+                                    },
+                                    majorTicks:{
+                                        visible:false
+                                    },
+                                    majorGridLines: {
+                                        visible: false
+                                    },
+                                    select: {
+                                      from: new Date(2008, 0, 2), // Inclusive
+                                      to: new Date(2015, 0, 7)    // Exclusive
+                                    },
+                                    axisCrossingValues: [0, 120000],
+                                    justified: true
+                                },
+                                valueAxes: [{
+                                    name: 'dataresult',
+                                    title: { text: datatochart[0].f72 },
+                                    name:'result',
+                                    color: "#73c100"
+                                }],
+                                tooltip: {
+                                    visible: true,
+                                    template: datatochart[0].f45+": #: value # "+datatochart[0].f72+"<br><br> #: kendo.toString(category,'D')#"
+                                },
+                                pannable: {
+                                    //lock: "y"
+                                },
+                                zoomable: {
+                                    mousewheel: {
+                                        //lock: "y"
+                                    },
+                                    selection: {
+                                        //lock: "y"
+                                    }
+                                },
+                                selectEnd: onSelectChatEnd
+                            });
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function onSelectChatEnd (e) {
+        var categories = e.axis.categories;
+        var startDate = e.from;
+        var endDate = e.to;
+
+       var totalResultValue = 0;
+       var totalRecords = 0;
+
+        for (var record in me.datatochart){
+
+           var recorddate = Date.parse(me.datatochart[record].f6);
+
+           if(recorddate>startDate && recorddate<endDate){
+              totalResultValue = totalResultValue + me.datatochart[record].f70;
+              totalRecords = totalRecords+1;
+           }
+
+          $('#rollingavg').text('Average for Selected Data = '+ Number(totalResultValue/totalRecords).toPrecision(4) + ' '+me.datatochart[0].f72);
+        }
+    }
+
+  	function setBasemap(basemap) {
+	    if (me.layer) {
+	      me.map.removeLayer(me.layer);
+	    }
+
+	    me.layer = L.esri.basemapLayer(basemap);
+	    me.map.addLayer(me.layer);
+	  }
+
+  	function changeBasemap(basemaps){
+    	var basemap = basemaps.value;
+    	setBasemap(basemap);
+  	}
+</script>
+</body>
+</html>
