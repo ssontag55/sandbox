@@ -46,6 +46,7 @@
       "esri/renderers/SimpleRenderer",
       "esri/symbols/SimpleMarkerSymbol",
       "esri/symbols/ObjectSymbol3DLayer",
+      "esri/layers/IntegratedMeshLayer",
       "esri/symbols/IconSymbol3DLayer",
       "esri/symbols/PointSymbol3D",
       "esri/tasks/QueryTask",
@@ -58,7 +59,7 @@
       "esri/config",
       "dojo/domReady!"
     ], function(dom,on,BasemapToggle,Map, camera, GraphicsLayer,Graphic,Point, SceneView,FeatureLayer, CSVLayer,
-      SimpleRenderer, SimpleMarkerSymbol, ObjectSymbol3DLayer,IconSymbol3DLayer, PointSymbol3D, QueryTask,Legend, Query,Home, domConstruct, CheckBox,esrirequest,esriConfig
+      SimpleRenderer, SimpleMarkerSymbol, ObjectSymbol3DLayer,IntegratedMeshLayer,IconSymbol3DLayer, PointSymbol3D, QueryTask,Legend, Query,Home, domConstruct, CheckBox,esrirequest,esriConfig
     ) {
 
           me = this;
@@ -68,6 +69,10 @@
 
           //analyticalresults  JSON
           var analyticalresults = "analyticalresults.csv";
+
+          var layerstack = new IntegratedMeshLayer({
+            url: "https://tiles.arcgis.com/tiles/7DPiBDyCvtJlGoFZ/arcgis/rest/services/ProductionStack/SceneServer"
+          });
 
           var popupTemplate = { 
             title: "{Location}",
@@ -157,14 +162,14 @@
         var map = new Map({
           basemap: "hybrid",
           ground: "world-elevation",
-          layers: [eqLayerSurface]//,quakesDepthLyr, quakesSurfaceLyr]
+          layers: [eqLayerSurface,layerstack]//,quakesDepthLyr, quakesSurfaceLyr]
         });
 
         var view = new SceneView({
           container: "viewDiv",
           map: map,
           // Indicates to create a local scene
-          viewingMode: "local",
+          //viewingMode: "local",
           // Allows for navigating the camera below the surface
           constraints: {
             collision: {

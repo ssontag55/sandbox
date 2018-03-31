@@ -104,6 +104,8 @@
     </div>
     <br>
     <label style="color:#3f93a6;font-size: 17px;font-weight: bold;" id="rollingavg">Adjust timeslider to find Average</label>
+    <br>
+    <label style="color:#3f93a6;font-size: 13px;font-weight: bold;" id="rollingSample"></label>
     <!-- <button id="refreshDataID" style="width: 148px;">Loading...</button> -->
     <img src="../indeterminate.gif" id="loadinggf" style="float:right;">
     <!-- <div>
@@ -529,8 +531,9 @@
                                         visible: false
                                     },
                                     select: {
-                                      from: new Date(2008, 0, 2), // Inclusive
-                                      to: new Date(2015, 0, 7)    // Exclusive
+                                      //max:new Date(2011, 0, 7),
+                                      from: new Date(2009, 0, 2), // Inclusive
+                                      to: new Date(2011, 0, 7)    // Exclusive
                                     },
                                     axisCrossingValues: [0, 120000],
                                     justified: true
@@ -583,6 +586,7 @@
            }
 
           $('#rollingavg').text('Average for Selected Data = '+ Number(totalResultValue/totalRecords).toPrecision(4) + ' '+me.datatochart[0].f72);
+          $('#rollingSample').text(totalRecords + ' records sampled.'); 
         }
     }
 

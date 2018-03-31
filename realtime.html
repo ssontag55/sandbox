@@ -1,0 +1,220 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TerraBase Real-Time</title>
+    <link rel="stylesheet" href="realtime/realtime.css" />
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.2/leaflet.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"></script>
+    <script src="L.Control.Locate.min.js" charset="utf-8"></script>
+    <script src="realtime/leaflet-liveupdate.js"></script>
+    <script src="realtime/leaflet-messagebox.js"></script>
+    <script src="jquery-3.1.1.min.js"></script>
+    <script src="esri-leaflet.js"></script>
+</head>
+<body>
+  <div id="viewDiv">
+  </div>
+  <div id="homeDiv">
+  </div>
+  <div id="BasemapToggle"></div>
+  <div id="sizeInputDiv">
+    <label>TerraBase Real-Time Data Monitoring
+    </label>
+    <br>
+    <br>
+    <div>
+      <select class="queryControls" style="width:165px;" id='queryNameDropdown'></select>
+    </div>
+    <br>
+    <div>
+      <select class="queryControls" style="width:165px;" id='chemNameDropdown' ></select>
+    </div>
+    <br>
+    <img src="indeterminate.gif" id="loadinggf" style="float:right;">
+    <div style="float: left;padding-right: 13px;">
+      <label for="genheat">Toggle Map Points</label>
+      <input type="checkbox" id="interpLayerToggle" checked style="margin-right:29px">
+    </div>
+  </div>
+  <div id="basemaps-wrapper" class="leaflet-bar">
+    <select name="basemaps" id="basemaps" onChange="changeBasemap(basemaps)">
+      <option value="Topographic">Topographic</option>
+      <option value="Streets">Streets</option>
+      <option value="Oceans">Oceans</option>
+      <option value="Gray">Gray</option>
+      <option value="Imagery">Imagery</option>
+      <option value="ShadedRelief">Shaded Relief</option>
+    </select>
+  </div>
+  <script>
+    startupMap();
+    
+    function startupMap(){
+      me = this;
+
+      me.datalist = [];
+      me.resultLyr = [];
+      me.mapinterval = 20;
+
+      $("#chemNameDropdown").on('change', me.refreshData);
+      $("#interpLayerToggle").click(me.toggleInterpolateLayer);
+
+      var options = {messagebox: true };
+      me.map = L.map('viewDiv', options).setView([30.458,-91.1811], 15);
+      me.layer = L.esri.basemapLayer('Imagery').addTo(map);
+
+      map.on('load', function () {
+          mapLoaded = true;
+      });
+      map.zoomControl.setPosition('bottomleft');
+      var positions = [ 'topleft', 'topright', 'bottomleft', 'bottomright' ];
+
+      L.control.locate({ position: 'bottomleft' }).addTo(map);
+      L.control.liveupdate ({
+        update_map: function () {
+          if(me.mapinterval == 0){
+              me.mapinterval = 20;
+              //getRealtimePoints();
+          }
+          else{
+            me.mapinterval = me.mapinterval-1;
+          }
+          var msg = "Map refresh in " + me.mapinterval;
+          map.messagebox.setPosition('bottomright');
+          map.messagebox.options.timeout = 7000;
+          map.messagebox.show(msg);
+        },
+        position: 'bottomleft',
+        interval: 1000
+      })
+      .addTo(map)
+      .startUpdating();
+
+      getRealtimePoints();
+    }
+
+    function getRealtimePoints(){
+
+      var reqUrl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Locations";
+      //var reqUrl = "realtime/points.json";
+
+      $.ajax({
+            type: "GET",
+            //async: true,
+            url: reqUrl
+            //contentType: "application/json; charset=utf-8",
+            //dataType: "json"
+        })
+        .fail(function (error) {
+            alert("Service Error For Requested Locations");
+        })
+        .done(function (data) {
+          $("#queryNameDropdown").empty();
+          if(data.length>0){
+
+            for (var group in data){ 
+                 me.datalist.push(data[group]);
+                 $("#queryNameDropdown").append($('<option></option>').val(data[group].Location).html(data[group].Location));
+              }
+            }
+            refreshData();
+      });
+    }
+
+    function refreshData(){
+      
+      $("#refreshDataID").attr('value', "Loading...");  
+      $("#loadinggf").show();
+      
+      me.map.removeLayer(me.resultLyr);
+      ///var chemID = document.getElementById('chemNameDropdown').value;
+
+      me.resultLyr = {
+        type: "FeatureCollection",
+        id: 1,
+        features: []
+      };
+
+      var datalist2Map = [];
+
+      if(me.datalist.length>0){
+
+        try{
+            for (var group in me.datalist){ 
+              
+              var obj = {};
+
+              obj.properties = me.datalist[group];
+              obj.type = "Feature";
+              obj.geometry = {
+                  coordinates: [
+                  me.datalist[group].Longitude,
+                  me.datalist[group].Latitude
+                  ],
+                  type: "Point"
+              };
+              me.resultLyr.features.push(obj);
+          }
+
+          me.resultLyr = L.geoJson(me.resultLyr, {
+            
+            onEachFeature:function(feature, layer){
+              layer.bindPopup("<b>"+feature.properties.Location+"</b><br><br>Value:  "+feature.properties.Location+"<br>Chemical:  Wind<br>Date: Now<br>",feature.properties.Location);
+            },
+            pointToLayer: function (feature, latlng) {
+
+                var geojsonMarkerOptions = {
+                    radius: 10,
+                    fillColor: "#ff7800",
+                    color: "#000",
+                    weight: 1,
+                    opacity: .9,
+                    fillOpacity: 0.7
+                };
+                return L.circleMarker(latlng, geojsonMarkerOptions);
+            }
+          });
+
+          me.map.addLayer(me.resultLyr);      
+          me.map.fitBounds(me.resultLyr.getBounds());     
+        }
+        catch (e){
+          alert("There is no valid data in this query.<br>"+e);
+        }
+      }
+      else{
+        alert("There is no valid data in this query.");
+      }
+             
+      $("#refreshDataID").html("Check Points");  
+      $("#loadinggf").hide();
+    }
+
+    function toggleInterpolateLayer(e){
+        if(me.resultLyr.options){
+          if($('#interpLayerToggle').prop('checked') == true){
+              me.map.addLayer(me.resultLyr);
+          }
+          else{
+              me.map.removeLayer(me.resultLyr);
+          } 
+        }
+    }
+    function setBasemap(basemap) {
+      if (me.layer) {
+        me.map.removeLayer(me.layer);
+      }
+
+      me.layer = L.esri.basemapLayer(basemap);
+
+      me.map.addLayer(me.layer);
+    }
+    function changeBasemap(basemaps){
+      var basemap = basemaps.value;
+      setBasemap(basemap);
+    }
+</script>
+</body>
+</html>

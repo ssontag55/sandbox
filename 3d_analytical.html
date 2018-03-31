@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -29,8 +29,8 @@
       color: white;
     }
   </style>
-  <link rel="stylesheet" href="https://js.arcgis.com/4.3/esri/css/main.css">
-  <script src="https://js.arcgis.com/4.3/"></script>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.5/esri/css/main.css">
+  <script src="https://js.arcgis.com/4.5/"></script>
   <script>
     require(["dojo/dom",
       "dojo/on",
@@ -45,6 +45,7 @@
       "esri/renderers/SimpleRenderer",
       "esri/symbols/SimpleMarkerSymbol",
       "esri/symbols/ObjectSymbol3DLayer",
+      "esri/layers/IntegratedMeshLayer",
       "esri/symbols/IconSymbol3DLayer",
       "esri/symbols/PointSymbol3D",
       "esri/widgets/Legend",
@@ -53,9 +54,10 @@
       "dijit/form/CheckBox",
       "esri/request",
       "esri/config",
+      "dojo/query",
       "dojo/domReady!"
     ], function(dom,on,BasemapToggle,Map, camera, GraphicsLayer,Graphic,Point, SceneView,FeatureLayer,
-      SimpleRenderer, SimpleMarkerSymbol, ObjectSymbol3DLayer,IconSymbol3DLayer, PointSymbol3D, Legend,Home, domConstruct, CheckBox,esrirequest,esriConfig
+      SimpleRenderer, SimpleMarkerSymbol, ObjectSymbol3DLayer,IntegratedMeshLayer,IconSymbol3DLayer, PointSymbol3D, Legend,Home, domConstruct, CheckBox,esrirequest,esriConfig,query
     ) {
 
           me = this;
@@ -69,6 +71,10 @@
           me.valuebreak2 = 100;
           me.valuebreak3 = 1000;
           me.valuebreak4 = 10000;
+
+          var layerstack = new IntegratedMeshLayer({
+            url: "https://tiles.arcgis.com/tiles/7DPiBDyCvtJlGoFZ/arcgis/rest/services/ProductionStack/SceneServer"
+          });
 
           this.layerFields = [
                {
@@ -113,6 +119,7 @@
        
           var map = new Map({
             basemap: "hybrid",
+            layers:[layerstack],
             ground: "world-elevation"
           });
           me.map = map;
@@ -121,7 +128,7 @@
             container: "viewDiv",
             map: map,
             // Indicates to create a local scene
-            viewingMode: "local",
+            //viewingMode: "local",
             // Allows for navigating the camera below the surface
             constraints: {
               collision: {
@@ -513,6 +520,7 @@
             me.resultDepthLyr = resultDepthLyr;
             me.map.add(resultDepthLyr);
             me.legend = new Legend({
+              id:'mylegend3d',
               view: view,
               layerInfos: [{
                 layer: me.resultDepthLyr,
@@ -524,6 +532,7 @@
             alert("There is no 3D data in this query.");
             me.legend = new Legend({
               view: view,
+              id:'mylegend3d',
               layerInfos: [{
                 layer: me.resultSurfaceLyr,
                 title: chemID+" Analytical Values ("+me.datalist[1].String_19+')'
@@ -539,7 +548,11 @@
               tilt: 60,
               zoom:15
           });
-              });
+          });
+
+          //wait for legend to render
+          setTimeout(addLegendClickOption, 9000);
+          
         }
         catch (e){
           alert("There is no valid data in this query.");
@@ -552,10 +565,23 @@
       dom.byId("refreshDataID").innerHTML = "Refresh Data";
     }
 
+    function addLegendClickOption(){
+        var tt = document.getElementsByClassName('esri-legend__service');
+          
+        document.getElementsByClassName('esri-legend__service')[0].addEventListener("click", function (event) {
+            if(event.currentTarget.style.height == '40px'){
+              event.currentTarget.style.height = '287px';   
+            }
+            else{ 
+              event.currentTarget.style.height = '40px'; 
+            }
+        });
+    }
+
     function getQueryList(){
 
-      var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report?sort=&page=1&pageSize=1000&group=&filter=Token~eq~'analytical_results'~and~IsGeoreferenced~eq~'Yes'";
-      //var reqUrl = "list.json";
+      //var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report?sort=&page=1&pageSize=1000&group=&filter=Token~eq~'analytical_results'~and~IsGeoreferenced~eq~'Yes'";
+      var reqUrl = "list.json";
 
       esrirequest(reqUrl).then(function( data ) {
           
@@ -585,8 +611,8 @@
         me.datalist = [];
         
         //var reqUrl = "1092.json";
-        //var reqUrl = "1106.json";
-        var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report/"+queryID+"?sort=&page=1&pageSize=200&group=&filter=";
+        var reqUrl = "1106.json";
+        //var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report/"+queryID+"?sort=&page=1&pageSize=200&group=&filter=";
 
         esrirequest(reqUrl).then(function( data ) {
             

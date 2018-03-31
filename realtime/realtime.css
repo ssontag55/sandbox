@@ -1,0 +1,68 @@
+.leaflet-control-liveupdate a {
+  background:#fff url(liveupdate.png) no-repeat 0 0;
+  background-size: 26px 52px;
+  background-position:3px 2px !important;
+}
+.leaflet-liveupdate-on .leaflet-control-liveupdate a {
+    background-position:3px 2px !important;
+}
+.leaflet-liveupdate-on a {
+    background-position:2px -23px !important;
+}
+.leaflet-control-messagebox {
+	display: none; /* Initially hidden */
+	border: 2px solid #8ebc00;
+	background-color: white;
+	padding: 3px 10px;
+}
+.leaflet-control-attribution{
+	display: none !important;
+}
+
+html,
+body,
+#viewDiv {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+} 
+#homeDiv {
+  right: 15px;
+  top: 160px;
+  z-index: 35;
+  position: absolute;
+}
+#sizeInputDiv {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  z-index: 1000;
+}
+#basemaps-wrapper {
+  position: absolute;
+  bottom: 90px;
+  right: 5px;
+  z-index: 400;
+  background: white;
+  padding: 10px;
+}
+#basemaps {
+  margin-bottom: 5px;
+}
+#interp_legend{
+  background:white !important;
+  font-size:13px  !important;
+  padding:10px  !important;
+}
+#interp_legend i {
+    width: 14px;
+    height: 15px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
+}
+.leaflet-control-locate a{font-size:1.4em;color:#444;cursor:pointer}.leaflet-control-locate.active a{color:#2074B6}.leaflet-control-locate.active.following a{color:#FC8428}
