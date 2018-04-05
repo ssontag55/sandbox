@@ -4,6 +4,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TerraBase Real-Time</title>
     <link rel="stylesheet" href="realtime/realtime.css" />
+    <link rel="stylesheet" href="MarkerCluster.css" />
+    <link rel="stylesheet" href="MarkerCluster.Default.css" />
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.2/leaflet.css" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
@@ -13,11 +15,87 @@
     <script src="L.Control.Locate.min.js" charset="utf-8"></script>
     <script src="realtime/leaflet-liveupdate.js"></script>
     <script src="realtime/leaflet-messagebox.js"></script>
-    <script src="jquery-3.1.1.min.js"></script>
+    <script src="leaflet.markercluster.js"></script>
     <script src="esri-leaflet.js"></script>
     <script src="realtime/canvasjs.min.js"></script>
 </head>
 <body>
+  <div id="menu-toggle">
+  <i class="fa fa-bars fa-2x"></i></div>
+  <div id="wrapper">
+
+  <!-- Sidebar -->
+  <div id="sidebar-wrapper">
+      <ul class="sidebar-nav">
+          <li class="sidebar-brand">
+              <a href="#"> 
+              </a>
+          </li>
+          <br><br>
+          <li>
+              <div class="panel-group panel panel-default" data='1339'>
+                <div class="panel-heading">Office-1</div>
+              </div>
+          </li>
+          <li>
+              <div class="panel panel-success" data='1340'>
+                <div class="panel-heading">Main Office</div>
+              </div>
+          </li>
+          <li>
+              <div class="panel panel-success" data='1341'>
+                <div class="panel-heading">Office-2</div>
+              </div>
+          </li>
+          <li>
+              <div class="panel panel-warning" data='1342'>
+          <div class="panel-heading">Storage</div>
+        </div>
+          </li>
+          <li>
+              <div class="panel panel-success" data='1343'>
+          <div class="panel-heading">Parking</div>
+        </div>
+          </li>
+          <li>
+              <div class="panel panel-danger" data='1344'>
+          <div class="panel-heading">Headquarters</div>
+        </div>
+          </li>
+          <li>
+                  <div class="panel panel-default" data='1339'>
+              <div class="panel-heading">Starbucks</div>
+            </div>
+          </li>
+
+          <li>
+              <div class="panel panel-success" data='1340'>
+          <div class="panel-heading">Sheraton</div>
+        </div>
+          </li>
+           <li>
+              <div class="panel panel-success" data='1341'>
+          <div class="panel-heading">Geneva 1</div>
+        </div>
+          </li>
+           <li>
+              <div class="panel panel-warning" data='1342'>
+          <div class="panel-heading">Geneva 2</div>
+        </div>
+          </li>
+           <li>
+                  <div class="panel panel-success" data='1343'>
+              <div class="panel-heading">Singapore</div>
+            </div>
+          </li>
+          <li>
+                  <div class="panel panel-success" data='1344'>
+              <div class="panel-heading">JFK</div>
+            </div>
+          </li>
+      </ul>
+  </div>
+  </div>
   <div id="splitd">
       <div id="viewDiv">
       </div>
@@ -26,40 +104,67 @@
       </div>
   </div>
   <div id="sizeInputDiv">
-    <label>TerraBase Real-Time Data Monitoring
+    <label style="float: right;">TerraBase Data Monitoring
     </label>
     <br>
-    <div class="container" style="width: 100%;">
+    <!-- <div class="container" style="width: 100%;">
       <div class="panel-group">
         <div class="panel panel-default" data='1339'>
-          <div class="panel-heading">MW-1</div>
+          <div class="panel-heading">Office-1</div>
           <div class="panel-body" id='s1'>Offline</div>
         </div>
         <div class="panel panel-success" data='1340'>
-          <div class="panel-heading">MW-2</div>
+          <div class="panel-heading">Main Office</div>
           <div class="panel-body" id='s2'>Good</div>
         </div>
 
         <div class="panel panel-success" data='1341'>
-          <div class="panel-heading">MW-3</div>
+          <div class="panel-heading">Office-2</div>
           <div class="panel-body" id='s3'>Good</div>
         </div>
 
         <div class="panel panel-warning" data='1342'>
-          <div class="panel-heading">MW-4</div>
+          <div class="panel-heading">Storage</div>
           <div class="panel-body" id='s4'>Warning</div>
         </div>
 
         <div class="panel panel-success" data='1343'>
-          <div class="panel-heading">MW-5</div>
+          <div class="panel-heading">Parking</div>
           <div class="panel-body" id='s5'>Alert</div>
         </div>
         <div class="panel panel-danger" data='1344'>
-          <div class="panel-heading">MW-6</div>
+          <div class="panel-heading">Headquarters</div>
           <div class="panel-body" id='s6'>Alert</div>
         </div>
+        <div class="panel panel-default" data='1339'>
+          <div class="panel-heading">Starbucks</div>
+          <div class="panel-body" id='s7'>Offline</div>
+        </div>
+        <div class="panel panel-success" data='1340'>
+          <div class="panel-heading">Sheraton</div>
+          <div class="panel-body" id='s8'>Good</div>
+        </div>
+
+        <div class="panel panel-success" data='1341'>
+          <div class="panel-heading">Geneva 1</div>
+          <div class="panel-body" id='s9'>Good</div>
+        </div>
+
+        <div class="panel panel-warning" data='1342'>
+          <div class="panel-heading">Geneva 2</div>
+          <div class="panel-body" id='s10'>Warning</div>
+        </div>
+
+        <div class="panel panel-success" data='1343'>
+          <div class="panel-heading">Singapore</div>
+          <div class="panel-body" id='s12'>Alert</div>
+        </div>
+        <div class="panel panel-danger" data='1344'>
+          <div class="panel-heading">JFK</div>
+          <div class="panel-body" id='s13'>Alert</div>
+        </div>
       </div>
-    </div>
+    </div> -->
     <br>
     <img src="indeterminate.gif" id="loadinggf" style="float:left;">
     <div style="float: right;">
@@ -88,6 +193,8 @@
 
       me.datalist = [];
       me.resultLyr = [];
+      
+      me.markers = L.markerClusterGroup();
       me.mapinterval = 30;
 
       $("#chemNameDropdown").on('change', me.refreshData);
@@ -102,9 +209,9 @@
       });
       map.zoomControl.setPosition('bottomleft');
 
-      map.on('click', function(e) {
+      /*map.on('click', function(e) {
           return false;
-      });
+      });*/
       var positions = [ 'topleft', 'topright', 'bottomleft', 'bottomright' ];
 
       L.control.locate({ position: 'bottomleft' }).addTo(map);
@@ -135,13 +242,20 @@
       $('.panel').click(me.badgeCLick);
 
       $('#closeseries').click(me.closeseriesDiv);
+
+      $('#timeseriesDiv').hide();
+
+      $("#menu-toggle").click(function(e) {
+          e.preventDefault();
+          $("#wrapper").toggleClass("toggled");
+      });
     }
 
     function getRealtimePoints(){
 
       var reqUrl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Locations";
       //var reqUrl = "realtime/points.json";
-
+      me.datalist = [];
       $.ajax({
             type: "GET",
             //async: true,
@@ -172,6 +286,8 @@
       $("#loadinggf").show();
       
       me.map.removeLayer(me.resultLyr);
+      me.map.removeLayer(me.markers);
+      me.markers.clearLayers();
       ///var chemID = document.getElementById('chemNameDropdown').value;
 
       me.resultLyr = {
@@ -206,10 +322,10 @@
             onEachFeature:function(feature, layer){
 
               var dateString = new Date().toISOString();
-              var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.ID+"&endDt="+dateString;
+              var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.aliasID+"&endDt="+dateString;
 
-              me.featureName = feature.properties.Location;
               layer.on('click', function(e){
+                  me.featureName = feature.properties.Location;
                   $("#loadinggf").show();
 
                   $.ajax({
@@ -220,22 +336,22 @@
                       alert("Service Error For Requested Locations");
                   })
                   .done(function (data) {
-                      layer.bindPopup('<b>'+me.featureName+'</b><br><table style="width:100%"><tr><th>Date:</th><td>'+data[0].LocalReadingDt+'</td></tr><tr><th>CO:</th><td>'+data[0].CO+'</td></tr><tr><th>DewPoint:</th><td>'+data[0].DewPoint+'</td></tr><tr><th>Humidity:</th><td>'+data[0].Humidity+'</td></tr><tr><th>Temp:</th><td>'+data[0].Temp+'</td></tr><tr><th>NO:</th><td>'+data[0].NO+'</td></tr><tr><th>NO2:</th><td>'+data[0].NO2+'</td></tr><tr><th>SO2:</th><td>'+data[0].SO2+'</td></tr><tr><th>NO2:</th><td>'+data[0].NO2+'</td></tr><tr><th>Pressure:</th><td>'+data[0].Pressure+'</td></tr><tr><th>NO2:</th><td>'+data[0].NO2+'</td></tr><tr><th>NOx</th><td>'+data[0].NOx+'</td></tr><tr><th>NO2:</th><td>'+data[0].NO2+'</td></tr><tr><th>PM25:</th><td>'+data[0].PM25+'</td></tr></table>');
+                    var dateFormat = new Date(data[0].LocalReadingDt).toLocaleString();
+                      layer.bindPopup('<b>'+me.featureName+'</b><br><table style="width:100%"><tr><th>Date:</th><td>'+dateFormat+'</td></tr><tr><th>CO:</th><td>'+data[0].CO+' ppm</td></tr><tr><th>Ozone:</th><td>'+data[0].Ozone+' ppm</td></tr><tr><th>Temp:</th><td>'+data[0].Temp+' F</td></tr><tr><th>NO:</th><td>'+data[0].NO+' ppb</td></tr><tr><th>NO2:</th><td>'+data[0].NO2+' ppb</td></tr><tr><th>SO2:</th><td>'+data[0].SO2+' ppb</td></tr><tr><th>NOx:</th><td>'+data[0].NOx+' ppb</td></tr><tr><th>Pressure:</th><td>'+data[0].Pressure+' Millibars</td></tr><tr><th>PM10</th><td>'+data[0].PM10+' ug/m3</td></tr><tr><th>PM25:</th><td>'+data[0].PM25+' ug/m3</td></tr><tr><th>Volatiles:</th><td>'+data[0].tVOC+' ppb</td></tr></table>').openPopup();
                       $("#loadinggf").hide();
-                      //layer.openPopup().openOn(map);
                 });
               });
             },
             pointToLayer: function (feature, latlng) {
 
                 var pointcolor = '#ff7800';
-                if(feature.properties.ID == 1339) {
+                if(feature.properties.aliasID == 1339) {
                   pointcolor = '#CCC';
                 }
-                else if(feature.properties.ID == 1344){
+                else if(feature.properties.aliasID == 1344){
                   pointcolor = 'red';
                 }
-                else if(feature.properties.ID == 1340 || feature.properties.ID == 1341 || feature.properties.ID == 1343 ){
+                else if(feature.properties.aliasID == 1340 || feature.properties.aliasID == 1341 || feature.properties.aliasID == 1343 ){
                   pointcolor = 'lightgreen';
                 }
 
@@ -247,11 +363,13 @@
                     opacity: .9,
                     fillOpacity: 0.7
                 };
+
                 return L.circleMarker(latlng, geojsonMarkerOptions);
             }
           });
 
-          me.map.addLayer(me.resultLyr);      
+          me.markers.addLayer(me.resultLyr);
+          me.map.addLayer(me.markers);      
           me.map.fitBounds(me.resultLyr.getBounds());     
         }
         catch (e){
@@ -314,23 +432,23 @@
           for (var i = 0; i < data.length; i++) {
             dataPointsTemp_Avg.push({
               x: new Date(data[i].LocalReadingDt),
-              y: data[i].Temp_Avg
+              y: Number(Number(data[i].Temp_Avg).toPrecision(3))
             });
 
             dataPointsHumidity_Avg.push({
               x: new Date(data[i].LocalReadingDt),
-              y: data[i].Humidity_Avg
+              y:  Number(Number(data[i].Humidity_Avg).toPrecision(3))
             });
 
             dataPointsCO_Avg.push({
               x: new Date(data[i].LocalReadingDt),
-              y: data[i].CO_Avg
+              y: Number(Number(data[i].CO_Avg).toPrecision(3))
             });
 
             dataPointsSO2_Avg.push({
               x: new Date(data[i].LocalReadingDt),
-              y: data[i].SO2_Avg
-            });
+              y: Number(Number(data[i].SO2_Avg).toPrecision(3))
+            });              
           }
 
           var chart = new CanvasJS.Chart("timeseriesDiv", {
