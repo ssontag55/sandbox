@@ -27,74 +27,75 @@
   <!-- Sidebar -->
   <div id="sidebar-wrapper">
       <ul class="sidebar-nav">
+        <br>
           <li class="sidebar-brand">
               <a href="#"> 
               </a>
           </li>
-          <br><br>
           <li>
-              <div class="panel-group panel panel-default" data='1339'>
-                <div class="panel-heading">Office-1</div>
-              </div>
-          </li>
-          <li>
-              <div class="panel panel-success" data='1340'>
-                <div class="panel-heading">Main Office</div>
-              </div>
-          </li>
-          <li>
-              <div class="panel panel-success" data='1341'>
-                <div class="panel-heading">Office-2</div>
-              </div>
-          </li>
-          <li>
-              <div class="panel panel-warning" data='1342'>
-          <div class="panel-heading">Storage</div>
-        </div>
-          </li>
-          <li>
-              <div class="panel panel-success" data='1343'>
-          <div class="panel-heading">Parking</div>
-        </div>
-          </li>
-          <li>
-              <div class="panel panel-danger" data='1344'>
-          <div class="panel-heading">Headquarters</div>
-        </div>
-          </li>
-          <li>
-                  <div class="panel panel-default" data='1339'>
-              <div class="panel-heading">Starbucks</div>
-            </div>
-          </li>
-
-          <li>
-              <div class="panel panel-success" data='1340'>
-          <div class="panel-heading">Sheraton</div>
-        </div>
-          </li>
-           <li>
-              <div class="panel panel-success" data='1341'>
-          <div class="panel-heading">Geneva 1</div>
-        </div>
-          </li>
-           <li>
-              <div class="panel panel-warning" data='1342'>
-          <div class="panel-heading">Geneva 2</div>
-        </div>
-          </li>
-           <li>
-                  <div class="panel panel-success" data='1343'>
-              <div class="panel-heading">Singapore</div>
+            <div class="btn-group">
+              <button type="button" data='6' class="btn btn badgegreen">
+                Headquarters <span class="badge badge-light">ok</span>
+              </button>
+              <button type="button" data='5' class="btn btn badgeorange">
+                Parking <span class="badge badge-light">3</span>
+              </button>
             </div>
           </li>
           <li>
-                  <div class="panel panel-success" data='1344'>
-              <div class="panel-heading">JFK</div>
+            <div class="btn-group">
+              <button type="button" data='1' class="btn btn badgeyellow">
+              Office 1 <span class="badge badge-light">2</span>
+              </button>
+              <button type="button" data='2' class="btn btn badgegreen">
+              Storage <span class="badge badge-light">ok</span>
+              </button>
+            </div>
+          </li>
+          <li>
+            <div class="btn-group">
+              <button type="button" data='3' class="btn btn badgegreen">
+              Office 2 <span class="badge badge-light">ok</span>
+              </button>
+              <button type="button" data='3' class="btn btn badgegreen">
+              Main Office <span class="badge badge-light">ok</span>
+              </button>
+            </div>
+          </li>
+          <li>
+            <div class="btn-group">
+              <button type="button" data='7' class="btn btn badgeyellow">
+                Startbucks <span class="badge badge-light">2</span>
+              </button>
+              <button type="button" data='8' class="btn btn badgegreen">
+                Sheraton <span class="badge badge-light">ok</span>
+              </button>
+            </div>
+          </li>
+           <li>
+            <div class="btn-group">
+              <button type="button" data='9' class="btn btn badgegreen">
+              Geneva 1 <span class="badge badge-light">ok</span>
+              </button>
+              <button type="button" data='10' class="btn btn badgegreen">
+              Geneva 2 <span class="badge badge-light">ok</span>
+              </button>
+            </div>
+          </li>
+           <li>
+            <div class="btn-group">
+              <button type="button" data='11' class="btn btn badgegreen">
+                Singapore <span class="badge badge-light">ok</span>
+              </button>
+              <button type="button" data='12' class="btn btn badgeorange">
+              JFK <span class="badge badge-light">3</span>
+            </button>
             </div>
           </li>
       </ul>
-  </div>
+
+      <div style="position: absolute;bottom: 1px;right: 1px;color: white;cursor: pointer;"><a target="_blank" href="realtime/aqi.pdf"><i class="fa fa-info-circle"></i>  Air Quality Index</a></div>
+    </div>
   </div>
   <div id="splitd">
       <div id="viewDiv">
@@ -107,67 +108,9 @@
     <label style="float: right;">TerraBase Data Monitoring
     </label>
     <br>
-    <!-- <div class="container" style="width: 100%;">
-      <div class="panel-group">
-        <div class="panel panel-default" data='1339'>
-          <div class="panel-heading">Office-1</div>
-          <div class="panel-body" id='s1'>Offline</div>
-        </div>
-        <div class="panel panel-success" data='1340'>
-          <div class="panel-heading">Main Office</div>
-          <div class="panel-body" id='s2'>Good</div>
-        </div>
-
-        <div class="panel panel-success" data='1341'>
-          <div class="panel-heading">Office-2</div>
-          <div class="panel-body" id='s3'>Good</div>
-        </div>
-
-        <div class="panel panel-warning" data='1342'>
-          <div class="panel-heading">Storage</div>
-          <div class="panel-body" id='s4'>Warning</div>
-        </div>
-
-        <div class="panel panel-success" data='1343'>
-          <div class="panel-heading">Parking</div>
-          <div class="panel-body" id='s5'>Alert</div>
-        </div>
-        <div class="panel panel-danger" data='1344'>
-          <div class="panel-heading">Headquarters</div>
-          <div class="panel-body" id='s6'>Alert</div>
-        </div>
-        <div class="panel panel-default" data='1339'>
-          <div class="panel-heading">Starbucks</div>
-          <div class="panel-body" id='s7'>Offline</div>
-        </div>
-        <div class="panel panel-success" data='1340'>
-          <div class="panel-heading">Sheraton</div>
-          <div class="panel-body" id='s8'>Good</div>
-        </div>
-
-        <div class="panel panel-success" data='1341'>
-          <div class="panel-heading">Geneva 1</div>
-          <div class="panel-body" id='s9'>Good</div>
-        </div>
-
-        <div class="panel panel-warning" data='1342'>
-          <div class="panel-heading">Geneva 2</div>
-          <div class="panel-body" id='s10'>Warning</div>
-        </div>
-
-        <div class="panel panel-success" data='1343'>
-          <div class="panel-heading">Singapore</div>
-          <div class="panel-body" id='s12'>Alert</div>
-        </div>
-        <div class="panel panel-danger" data='1344'>
-          <div class="panel-heading">JFK</div>
-          <div class="panel-body" id='s13'>Alert</div>
-        </div>
-      </div>
-    </div> -->
     <br>
     <img src="indeterminate.gif" id="loadinggf" style="float:left;">
-    <div style="float: right;">
+    <div style="float: right;display: none;">
       <label for="interpLayerToggle">Toggle Map Points
       </label>
       <div style="float:right;padding-left: 10px;">
@@ -194,7 +137,40 @@
       me.datalist = [];
       me.resultLyr = [];
       
-      me.markers = L.markerClusterGroup();
+      me.listofcolors = {
+        '#A6CE39':'green', 
+        '#FFF200':'yellow', 
+        '#ED1D24':'red', 
+        '#A2064A':'purple', 
+        '#F7901E':'orange', 
+        '#891A1C':'bad'
+      };
+      me.listofcolorsRank = {
+        'green':1, 
+        'yellow':2,  
+        'orange':3,
+        'red':4, 
+        'purple':5, 
+        'bad':6
+      };
+
+      me.markers = L.markerClusterGroup({
+        iconCreateFunction: function (cluster) {
+          var childMarkers = cluster.getAllChildMarkers();
+          var colorofIcon = 'green';
+
+          for (var markeringroup in childMarkers){ 
+             if(me.listofcolorsRank[colorofIcon] < me.listofcolorsRank[me.listofcolors[childMarkers[markeringroup].options.fillColor]] ){
+                colorofIcon = me.listofcolors[childMarkers[markeringroup].options.fillColor]; 
+             }
+          }
+
+          return L.divIcon({ html: cluster.getChildCount(), 
+            className:'cluster cluster'+colorofIcon,
+            iconSize: null
+          });
+        },
+      });
       me.mapinterval = 30;
 
       $("#chemNameDropdown").on('change', me.refreshData);
@@ -239,16 +215,32 @@
 
       addOtherthings();
 
-      $('.panel').click(me.badgeCLick);
+      $('.btn').click(me.badgeCLick);
 
       $('#closeseries').click(me.closeseriesDiv);
-
-      $('#timeseriesDiv').hide();
 
       $("#menu-toggle").click(function(e) {
           e.preventDefault();
           $("#wrapper").toggleClass("toggled");
+          $("#timeseriesDiv").toggleClass("toggled");
+          $("#viewDiv").toggleClass("toggled");
+
+          if($( window ).width()> $('#viewDiv').width()){
+            $('#viewDiv').width($('#splitd').width());
+            $('#timeseriesDiv').width($('#splitd').width());                
+          }
+          else{
+            $('#viewDiv').width($('#splitd').width()-250);
+            $('#timeseriesDiv').width($('#splitd').width()-250); 
+          }
       });
+    }
+
+    function closeseriesDiv(){
+
+      $('#timeseriesDiv').hide();
+      $('#viewDiv').height($('#splitd').height());
+      $('#closeseries').hide();
     }
 
     function getRealtimePoints(){
@@ -267,7 +259,6 @@
             alert("Service Error For Requested Locations");
         })
         .done(function (data) {
-          //$("#container").empty();
           if(data.length>0){
             
             //Add Dynamic badges
@@ -326,6 +317,8 @@
 
               layer.on('click', function(e){
                   me.featureName = feature.properties.Location;
+                  me.featureID = feature.properties.aliasID;
+
                   $("#loadinggf").show();
 
                   $.ajax({
@@ -337,23 +330,31 @@
                   })
                   .done(function (data) {
                     var dateFormat = new Date(data[0].LocalReadingDt).toLocaleString();
-                      layer.bindPopup('<b>'+me.featureName+'</b><br><table style="width:100%"><tr><th>Date:</th><td>'+dateFormat+'</td></tr><tr><th>CO:</th><td>'+data[0].CO+' ppm</td></tr><tr><th>Ozone:</th><td>'+data[0].Ozone+' ppm</td></tr><tr><th>Temp:</th><td>'+data[0].Temp+' F</td></tr><tr><th>NO:</th><td>'+data[0].NO+' ppb</td></tr><tr><th>NO2:</th><td>'+data[0].NO2+' ppb</td></tr><tr><th>SO2:</th><td>'+data[0].SO2+' ppb</td></tr><tr><th>NOx:</th><td>'+data[0].NOx+' ppb</td></tr><tr><th>Pressure:</th><td>'+data[0].Pressure+' Millibars</td></tr><tr><th>PM10</th><td>'+data[0].PM10+' ug/m3</td></tr><tr><th>PM25:</th><td>'+data[0].PM25+' ug/m3</td></tr><tr><th>Volatiles:</th><td>'+data[0].tVOC+' ppb</td></tr></table>').openPopup();
+
+                      //fa-circle
+                      layer.bindPopup('<b><label class="poptitle">'+me.featureName+'</></b><br><table id="popuptable" style="width:100%">'+dateFormat+'</td></tr>'+chartForTemp(data[0].Temp,me.featureID)+chartForCO(data[0].CO,me.featureID)+chartForOzone(data[0].Ozone,me.featureID)+chartForNO(data[0].NO,me.featureID)+chartForNO2(data[0].NO2,me.featureID)+chartForSO2(data[0].SO2,me.featureID)+chartForNOx(data[0].NOx,me.featureID)+chartForPM10(data[0].PM10,me.featureID)+chartForPM25(data[0].PM25,me.featureID)+chartForPressure(data[0].Pressure,me.featureID)+chartForVolatiles(data[0].tVOC,me.featureID)+'</table>').openPopup();
                       $("#loadinggf").hide();
                 });
               });
             },
             pointToLayer: function (feature, latlng) {
 
-                var pointcolor = '#ff7800';
+                var pointcolor = '#A6CE39';//green //default
                 if(feature.properties.aliasID == 1339) {
-                  pointcolor = '#CCC';
+                  pointcolor = '#FFF200';//yellow
                 }
                 else if(feature.properties.aliasID == 1344){
-                  pointcolor = 'red';
+                  pointcolor = '#F7901E'; //orange
                 }
-                else if(feature.properties.aliasID == 1340 || feature.properties.aliasID == 1341 || feature.properties.aliasID == 1343 ){
-                  pointcolor = 'lightgreen';
-                }
+                /*else if(feature.properties.aliasID == 1343 ){
+                  pointcolor = '#891A1C';//bad
+                }*/
+                /*else if(feature.properties.aliasID == 1340){
+                  pointcolor = '#ED1D24';//red
+                }*/
+                /*else if(feature.properties.aliasID == 1341){
+                  pointcolor = '#A2064A';//purple
+                }*/
 
                 var geojsonMarkerOptions = {
                     radius: 10,
@@ -384,24 +385,75 @@
       $("#loadinggf").hide();
     }
 
-    function closeseriesDiv(){
-        $('#viewDiv').height('100%');//$('#splitd').height()
-        $('#timeseriesDiv').hide();
-        $('#closeseries').hide();
-        $('#basemaps-wrapper').css('bottom',90);
+    function chartForCO(val,f_id){
+      return '<tr><th>CO:</th><td>'+val+' ppm<a onClick="me.popupChartClick(\'CO\','+f_id+')" ><i data="CO" title="Graph CO" class="fa fa-line-chart green"></i></a></td></tr>';
+    }
+
+    function chartForTemp(val,f_id){
+      return '<tr><th>Temp:</th><td>'+val+' F<a onClick="me.popupChartClick(\'Temp\','+f_id+')" ><i data="Temp" title="Graph Temperature" class="fa fa-line-chart orange"></i></a></td></tr>';
+    }
+    function chartForOzone(val,f_id){
+      return '<tr><th>Ozone:</th><td>'+val+' ppm<a onClick="me.popupChartClick(\'Ozone\','+f_id+')" ><i data="Ozone" title="Graph Ozone" class="fa fa-line-chart yellow"></i></a></td></tr>';
+    }
+
+    function chartForVolatiles(val,f_id){
+      return '<tr><th>Volatiles:</th><td>'+val+' ppb<a onClick="me.popupChartClick(\'tVOC\','+f_id+')" ><i data="tVOC" title="Graph Volatiles" class="fa fa-line-chart green"></i></a></td></tr>';
+    }
+
+    function chartForNO(val,f_id){
+      return '<tr><th>NO:</th><td>'+val+' ppb<a onClick="me.popupChartClick(\'NO\','+f_id+')" ><i data="NOx" title="Graph NO" class="fa fa-line-chart green"></i></a></td></tr>';
+    }
+
+    function chartForNO2(val,f_id){
+      return '<tr><th>NO2:</th><td>'+val+' ppb<a onClick="me.popupChartClick(\'NO2\','+f_id+')" ><i data="NO2" title="Graph NO2" class="fa fa-line-chart green"></i></a></td></tr>';
+    }
+
+    function chartForSO2(val,f_id){
+      return '<tr><th>SO2:</th><td>'+val+' ppb<a onClick="me.popupChartClick(\'SO2\','+f_id+')" ><i data="SO2" title="Graph SO2" class="fa fa-line-chart green"></i></a></td></tr>';
+    }
+
+    function chartForNOx(val,f_id){
+      return '<tr><th>NOx:</th><td>'+val+' ppb<a onClick="me.popupChartClick(\'NOx\','+f_id+')" ><i data="NOx" data="NOx" title="Graph NOx" class="fa fa-line-chart green"></i></a></td></tr>';
+    }
+
+    function chartForPM10(val,f_id){
+      return '<tr><th>PM10:</th><td>'+val+' ug/m3<a onClick="me.popupChartClick(\'PM10\','+f_id+')" ><i title="Graph PM10" class="fa fa-line-chart yellow"></i></a></td></tr>';
+    }
+    function chartForPM25(val,f_id){
+      return '<tr><th>PM25:</th><td>'+val+' ug/m3<a onClick="me.popupChartClick(\'PM25\','+f_id+')" ><i data="PM25" title="Graph PM25" class="fa fa-line-chart green"></i></a></td></tr>';
+    }
+
+    function chartForPressure(val,f_id){
+      return '<tr><th>Pressure:</th><td>'+val+' mbar<a onClick="me.popupChartClick(\'Pressure\','+f_id+')" ><i data="Pressure" title="Graph Pressure" class="fa fa-line-chart orange"></i></a></td></tr>';
     }
 
     function badgeCLick(b){
 
       $("#loadinggf").show();
-
+      var idClick;
+      var latclick;
+      var longclick;
       for (var group in me.datalist){ 
           
-          if(me.datalist[group].ID == Number($(this).attr('data'))){
-            map.setView([me.datalist[group].Latitude, me.datalist[group].Longitude], 17);
+          if(me.datalist[group].$id == Number($(this).attr('data'))){
+            idClick = me.datalist[group].aliasID;
+            latclick=me.datalist[group].Latitude;
+            longclick=me.datalist[group].Longitude;
             me.featureName = me.datalist[group].Location;
           }
       }
+
+
+      setTimeout(function(){ map.setView([latclick, longclick], 17) }, 1000);
+      me.renderChart(idClick);
+    }
+
+    function popupChartClick(b,id){
+      $("#loadinggf").show();
+      me.renderChart(id, b);
+    }
+
+    function renderChart(idClick, param){
 
       var dateFrom = new Date();
       dateFrom = dateFrom.setDate(dateFrom.getDate() - 10);
@@ -409,10 +461,11 @@
       var dateStringTo = dateTo.toISOString();
       var dateStringFrom = new Date(dateFrom).toISOString();
 
-      var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/Hourly?Id="+Number($(this).attr('data'))+"&endDt="+dateStringTo+"&startDt="+dateStringFrom;
+      var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/Hourly?Id="+idClick+"&endDt="+dateStringTo+"&startDt="+dateStringFrom;
 
       $("#loadinggf").show();
       $('#timeseriesDiv').show();
+      $('#closeseries').show();
 
       $.ajax({
           type: "GET",
@@ -429,102 +482,129 @@
           var dataPointsHumidity_Avg = []
           var dataPointsSO2_Avg = [];
           var dataPointsCO_Avg = [];
+
+          var paramValue = [];
           for (var i = 0; i < data.length; i++) {
-            dataPointsTemp_Avg.push({
-              x: new Date(data[i].LocalReadingDt),
-              y: Number(Number(data[i].Temp_Avg).toPrecision(3))
-            });
+            if(param){
+              var paramName = param+ '_Avg';
+              paramValue.push({
+                x: new Date(data[i].LocalReadingDt),
+                y: Number(Number(data[i][paramName]).toPrecision(3))
+              });
+            }
+            else{
+              dataPointsTemp_Avg.push({
+                x: new Date(data[i].LocalReadingDt),
+                y: Number(Number(data[i].Temp_Avg).toPrecision(3))
+              });
 
-            dataPointsHumidity_Avg.push({
-              x: new Date(data[i].LocalReadingDt),
-              y:  Number(Number(data[i].Humidity_Avg).toPrecision(3))
-            });
+              dataPointsHumidity_Avg.push({
+                x: new Date(data[i].LocalReadingDt),
+                y:  Number(Number(data[i].Humidity_Avg).toPrecision(3))
+              });
 
-            dataPointsCO_Avg.push({
-              x: new Date(data[i].LocalReadingDt),
-              y: Number(Number(data[i].CO_Avg).toPrecision(3))
-            });
+              dataPointsCO_Avg.push({
+                x: new Date(data[i].LocalReadingDt),
+                y: Number(Number(data[i].CO_Avg).toPrecision(3))
+              });
 
-            dataPointsSO2_Avg.push({
-              x: new Date(data[i].LocalReadingDt),
-              y: Number(Number(data[i].SO2_Avg).toPrecision(3))
-            });              
+              dataPointsSO2_Avg.push({
+                x: new Date(data[i].LocalReadingDt),
+                y: Number(Number(data[i].SO2_Avg).toPrecision(3))
+              });  
+            }           
+          }
+
+
+          if(param){
+            var dataSupply = [{
+              type: "line",
+              name: paramName,
+              color: "#369EAD",
+              showInLegend: true,
+              axisYIndex: 0,
+              dataPoints: paramValue
+            }]
+          }
+          else{
+            var dataSupply = [{
+              type: "line",
+              name: "Humidity",
+              color: "#369EAD",
+              showInLegend: true,
+              axisYIndex: 1,
+              dataPoints: dataPointsHumidity_Avg
+            },
+            {
+              type: "line",
+              name: "Temp Avg",
+              color: "#C24642",
+              axisYIndex: 0,
+              showInLegend: true,
+              dataPoints: dataPointsTemp_Avg
+            },
+            {
+              type: "line",
+              name: "CO Avg",
+              color: "#7F6084",
+              axisYType: "secondary",
+              showInLegend: true,
+              dataPoints: dataPointsCO_Avg
+            },
+            {
+              type: "line",
+              name: "SO Avg",
+              color: "blue",
+              axisYType: "secondary",
+              showInLegend: true,
+              dataPoints: dataPointsSO2_Avg
+            }];
+
+            var paramName = 'Humidity';
           }
 
           var chart = new CanvasJS.Chart("timeseriesDiv", {
-          /*title:{
-            text: ""
-          },*/
-          animationEnabled: true,
-          zoomEnabled: true,
-          axisY:[{
-            title: "Temp Avg",
-            lineColor: "#C24642",
-            tickColor: "#C24642",
-            labelFontColor: "#C24642",
-            titleFontColor: "#C24642",
-            suffix: "°"
-          },
-          {
-            title: "Humidity",
-            lineColor: "#369EAD",
-            tickColor: "#369EAD",
-            labelFontColor: "#369EAD",
-            titleFontColor: "#369EAD"
-          }],
-          axisY2: {
-            title: "Value",
-            lineColor: "#7F6084",
-            tickColor: "#7F6084",
-            labelFontColor: "#7F6084",
-            titleFontColor: "#7F6084"
-          },
-          toolTip: {
-            shared: true
-          },
-          legend: {
-            cursor: "pointer",
-            itemclick: toggleDataSeries
-          },
-          data: [{
-            type: "line",
-            name: "Humidity",
-            color: "#369EAD",
-            showInLegend: true,
-            axisYIndex: 1,
-            dataPoints: dataPointsHumidity_Avg
-          },
-          {
-            type: "line",
-            name: "Temp Avg",
-            color: "#C24642",
-            axisYIndex: 0,
-            showInLegend: true,
-            dataPoints: dataPointsTemp_Avg
-          },
-          {
-            type: "line",
-            name: "CO Avg",
-            color: "#7F6084",
-            axisYType: "secondary",
-            showInLegend: true,
-            dataPoints: dataPointsCO_Avg
-          },
-          {
-            type: "line",
-            name: "SO Avg",
-            color: "blue",
-            axisYType: "secondary",
-            showInLegend: true,
-            dataPoints: dataPointsSO2_Avg
-          }]
-        });
+            /*title:{
+              text: ""
+            },*/
+            animationEnabled: true,
+            zoomEnabled: true,
+            axisY:[{
+              title: "Temp Avg",
+              lineColor: "#C24642",
+              tickColor: "#C24642",
+              labelFontColor: "#C24642",
+              titleFontColor: "#C24642",
+              suffix: "°"
+            },
+            {
+              title: paramName,
+              lineColor: "#369EAD",
+              tickColor: "#369EAD",
+              labelFontColor: "#369EAD",
+              titleFontColor: "#369EAD"
+            }],
+            axisY2: {
+              title: "Value",
+              lineColor: "#7F6084",
+              tickColor: "#7F6084",
+              labelFontColor: "#7F6084",
+              titleFontColor: "#7F6084"
+            },
+            toolTip: {
+              shared: true
+            },
+            legend: {
+              cursor: "pointer",
+              itemclick: toggleDataSeries
+            },
+            data: dataSupply
+          });
         chart.render();
         $("#loadinggf").hide();
         $('#closeseries').show();
       });
     }
-
     function toggleInterpolateLayer(e){
         if(me.resultLyr.options){
           if($('#interpLayerToggle').prop('checked') == true){
