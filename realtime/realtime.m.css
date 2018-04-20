@@ -33,15 +33,15 @@
 }
 
 .btn-group .btn{
-  margin-left: 3px !important;
+  margin-left: 10px !important;
 }
 .btn{
   font-size: 12px !important;
-  width: 112px;
+  width: 122px;
   padding: 6px 4px !important;
 }
 .btn span{
-  right: 0;
+  /*right: 0;*/
   margin-left: 1px;
   font-size: 11px !important; 
 }
@@ -51,29 +51,8 @@
 }
 
 .search-container{
-  margin-left: 10%;
-  margin-bottom: 3px;
-}
-
-.leaflet-control-liveupdate a {
-  background:#fff url(liveupdate.png) no-repeat 0 0;
-  background-size: 26px 52px;
-  background-position:3px 2px !important;
-}
-.leaflet-liveupdate-on .leaflet-control-liveupdate a {
-    background-position:3px 2px !important;
-}
-.leaflet-liveupdate-on a {
-    background-position:2px -23px !important;
-}
-.leaflet-control-messagebox {
-	display: none; /* Initially hidden */
-	border: 2px solid #8ebc00;
-	background-color: white;
-	padding: 3px 10px;
-}
-.leaflet-control-attribution{
-	display: none !important;
+  margin-left: 11%;
+  margin-bottom: 4px;
 }
 
 body{
@@ -144,26 +123,41 @@ body,
 }
 #clickLocDiv{
   position: absolute;
-  top: 150px;
+  top: 165px;
   width: 97%;
   margin-left: 5px;
   font-size: 12px;
 }
 #backDiv{
-  margin-top: 85px !important;
+  margin-top: 110px  !important;
   font-weight: bold !important;
   font-size: 15px;
   padding-left:7px;
+  margin-left: 27%;
   line-height: 20px;
 }
-#singleStationDiev{
-  position: absolute;
+#singleStationDev{
+  display: block;
+  position: static;
+  display: block;
+  position: static;
+  height: 312px;
   display: none;
   width: 100%;
   color: white;
 }
 
-#singleStationDiev .fa-line-chart{
+.canvasjs-chart-canvas{
+
+}
+#interpLayerToggle{
+    font-size: 10px !important;
+    position: absolute;
+    right: 0px;
+    top: 30px;
+    padding: 8px;
+}
+#singleStationDev .fa-line-chart{
   float: right;
   margin-top: 3px;
 }
@@ -186,13 +180,14 @@ body,
 }
 #sizeInputDiv {
   position: absolute;
-  top: 1px;
+  height: 90px;
   left: 1px;
-  padding: 12px;
-  background-color: rgba(0, 0, 0, 0.5); 
+  top: 1px;
+  padding: 2px;
+  background-color: rgba(0, 0, 0, 0.8); 
   color: white;
   z-index: 1000;
-  width: 249px;
+  width: 100%;
 }
 #sizeInputDiv label{
   font-weight: 800 !important;
@@ -311,6 +306,11 @@ body,
 }
 .leaflet-control-locate a{font-size:1.4em;color:#444;cursor:pointer}.leaflet-control-locate.active a{color:#2074B6}.leaflet-control-locate.active.following a{color:#FC8428}
 
+#loadinggf{
+  display: none;
+  margin-top: 23px;
+  float: right;
+}
 
 body {
   overflow-x: hidden;
@@ -324,10 +324,8 @@ body {
   transition: all 0.5s ease;
 }
 
-#wrapper.toggled {
-  padding-left: 250px;
-}
-#splitd.toggled {
+#wrapper {
+  width: 100%;
 }
 
 #viewDiv.toggled{
@@ -341,27 +339,21 @@ body {
 #sidebar-wrapper {
   z-index: 1000;
   position: fixed;
-  left: 250px;
-  width: 0;
+  width: 100%;
+  width: 100%;
   height: 100%;
-  margin-left: -250px;
   overflow-y: auto;
   background: #2096C5;
   -webkit-transition: all 0.5s ease;
   -moz-transition: all 0.5s ease;
   -o-transition: all 0.5s ease;
   transition: all 0.5s ease;
-  overflow-x: hidden;
-}
-
-#wrapper.toggled #sidebar-wrapper {
-  width: 250px;
+  overflow-x: auto;
 }
 
 #page-content-wrapper {
   width: 100%;
   position: absolute;
-  padding: 15px;
 }
 
 #wrapper.toggled #page-content-wrapper {
@@ -372,16 +364,17 @@ body {
 /* Sidebar Styles */
 .sidebar-nav {
   position: absolute;
-  top: 0;
-  width: 250px;
-  margin: 0;
-  padding: 0;
+  top: 80px;
+  margin-left: 6%;
+  /*padding: 0;*/
+  width: 100%;
   list-style: none;
 }
 
 .sidebar-nav li {
     text-indent: 2px;
     line-height: 38px;
+    margin-left: -10px;
     margin-bottom: 5px;
 }
 
@@ -424,13 +417,13 @@ body {
     padding-left: 250px;
   }
   #sidebar-wrapper {
-    width: 0;
+    width: 100%;
   }
   #wrapper.toggled #sidebar-wrapper {
     width: 250px;
   }
   #page-content-wrapper {
-    padding: 20px;
+    padding: 5px;
     position: relative;
   }
   #wrapper.toggled #page-content-wrapper {
@@ -441,12 +434,12 @@ body {
 
 #menu-toggle{
   cursor: pointer;
-  float: left;
+  width: 100%;
   color: white;
   position: absolute;
   /* bottom: 90px; */
   /* right: 5px; */
   z-index: 4000;
   /* background: white; */
-  padding: 10px;
+  /*padding: 3px;*/
 }
