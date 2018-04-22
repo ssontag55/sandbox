@@ -16,6 +16,14 @@
 
   <!-- Sidebar -->
   <div id="sidebar-wrapper">
+      <div id="sizeInputDiv">
+        <div style="float: right;padding:7px;"><label>TerraBase Data Monitoring</label></div>
+        <div id="interpLayerToggle">
+          <label>Mobile View</label>
+          <img src="indeterminate.gif" id="loadinggf" />
+        </div>
+        <div><a target='_blank' href='http://live.terrabase.com'><img width='65px' style="margin:10px;" src='realtime/tb.png'/></a></div>
+      </div>
       <ul class="sidebar-nav" id="stationList">
           <br>          
           <div style="margin-left: 24%;margin-bottom:5px;position: static;color: white;cursor: pointer;"><a target="_blank" href="realtime/aqi.pdf"><i class="fa fa-info-circle"></i>  Air Quality Index</a></div>
@@ -56,7 +64,7 @@
           <li>
             <div class="btn-group">
               <button type="button" data='7' class="btn btn badgeyellow">
-                Startbucks <span class="badge badge-light">2</span>
+                Starbucks <span class="badge badge-light">2</span>
               </button>
               <button type="button" data='8' class="btn btn badgegreen">
                 Sheraton <span class="badge badge-light">ok</span>
@@ -96,14 +104,6 @@
       </div>
     </div>
   </div>
-  <div id="sizeInputDiv">
-    <div style="float: right;padding:7px;"><label>TerraBase Data Monitoring</label></div>
-    <div id="interpLayerToggle">
-      <label>Mobile View</label>
-      <img src="indeterminate.gif" id="loadinggf" />
-    </div>
-    <div><a target='_blank' href='http://live.terrabase.com'><img width='65px' style="margin:10px;" src='realtime/tb.png'/></a></div>
-  </div>
   <script>
     startupMap();
     
@@ -121,7 +121,7 @@
       };
 
       if (!isMobile()){
-          window.open("https://map-1.terrabase.com/realtime/", '_self');
+          //window.open("https://map-1.terrabase.com/realtime/", '_self');
       };
       
       me.listofcolors = {
@@ -143,7 +143,7 @@
 
       getRealtimePoints();
 
-      setTimeout(me.updateData, 21000);
+      //setTimeout(me.updateData, 21000);
 
       $('#closeseries').click(me.closeseriesDiv);
 
@@ -196,46 +196,46 @@
     }
 
     function chartForCO(val,f_id){
-      return '<tr><th>Carbon Monoxide</th><td  class="badgegreen">'+val+' ppm<a onClick="me.popupChartClick(\'CO\','+f_id+')" ><i data="CO" title="Graph CO" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Carbon Monoxide</th><td  onClick="me.popupChartClick(\'CO\','+f_id+')"  class="badgegreen">'+val+' ppm<a><i data="CO" title="Graph CO" class="fa fa-line-chart"></i></a></td></tr>';
     }
 
     function chartForTemp(val,f_id){
-      return '<tr><th>Temperature</th><td  class="badgeorange">'+val+' °F<a onClick="me.popupChartClick(\'Temp\','+f_id+')" ><i data="Temp" title="Graph Temperature" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Temperature</th><td onClick="me.popupChartClick(\'Temp\','+f_id+')" class="badgeorange">'+val+' °F<a><i data="Temp" title="Graph Temperature" class="fa fa-line-chart"></i></a></td></tr>';
     }
     function chartForOzone(val,f_id){
-      return '<tr><th>Ozone</th><td  class="badgeyellow">'+val+' ppm<a onClick="me.popupChartClick(\'Ozone\','+f_id+')" ><i data="Ozone" title="Graph Ozone" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Ozone</th><td  onClick="me.popupChartClick(\'Ozone\','+f_id+')"  class="badgeyellow">'+val+' ppm<a><i data="Ozone" title="Graph Ozone" class="fa fa-line-chart"></i></a></td></tr>';
     }
 
     function chartForVolatiles(val,f_id){
-      return '<tr><th>Volatiles</th><td  class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'tVOC\','+f_id+')" ><i data="tVOC" title="Graph Volatiles" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Volatiles</th><td  onClick="me.popupChartClick(\'tVOC\','+f_id+')"  class="badgegreen">'+val+' ppb<a><i data="tVOC" title="Graph Volatiles" class="fa fa-line-chart"></i></a></td></tr>';
     }
 
     function chartForNO(val,f_id){
-      return '<tr><th>Nitric Oxide</th><td  class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'NO\','+f_id+')" ><i data="NOx" title="Graph NO" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Nitric Oxide</th><td  onClick="me.popupChartClick(\'NO\','+f_id+')"  class="badgegreen">'+val+' ppb<a><i data="NOx" title="Graph NO" class="fa fa-line-chart"></i></a></td></tr>';
     }
 
     function chartForNO2(val,f_id){
-      return '<tr><th>Nitrogen Oxides</th><td  class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'NO2\','+f_id+')" ><i data="NO2" title="Graph NO2" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Nitrogen Oxides</th><td  onClick="me.popupChartClick(\'NO2\','+f_id+')"  class="badgegreen">'+val+' ppb<a><i data="NO2" title="Graph NO2" class="fa fa-line-chart"></i></a></td></tr>';
     }
 
     function chartForSO2(val,f_id){
       
-      return '<tr><th>Sulphur Dioxide</th><td  class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'SO2\','+f_id+')" ><i data="SO2" title="Graph SO2" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Sulphur Dioxide</th><td  onClick="me.popupChartClick(\'SO2\','+f_id+')"  class="badgegreen">'+val+' ppb<a><i data="SO2" title="Graph SO2" class="fa fa-line-chart"></i></a></td></tr>';
     }
 
     function chartForNOx(val,f_id){
-      return '<tr><th>Nitrogen Oxides</th><td class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'NOx\','+f_id+')" ><i data="NOx" data="NOx" title="Graph NOx" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Nitrogen Oxides</th><td  onClick="me.popupChartClick(\'NOx\','+f_id+')"  class="badgegreen">'+val+' ppb<a><i data="NOx" data="NOx" title="Graph NOx" class="fa fa-line-chart"></i></a></td></tr>';
     }
 
     function chartForPM10(val,f_id){
-      return '<tr><th>Particulates < 10 μm</th><td class="badgeyellow">'+val+' μg/m³<a onClick="me.popupChartClick(\'PM10\','+f_id+')" ><i title="Graph PM10" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Particulates < 10 μm</th><td  onClick="me.popupChartClick(\'PM10\','+f_id+')"  class="badgeyellow">'+val+' μg/m³<a><i title="Graph PM10" class="fa fa-line-chart"></i></a></td></tr>';
     }
     function chartForPM25(val,f_id){
-      return '<tr><th>Particulates < 25 μm</th><td  class="badgegreen">'+val+' μg/m³<a onClick="me.popupChartClick(\'PM25\','+f_id+')" ><i data="PM25" title="Graph PM25" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Particulates < 25 μm</th><td  onClick="me.popupChartClick(\'PM25\','+f_id+')"  class="badgegreen">'+val+' μg/m³<a><i data="PM25" title="Graph PM25" class="fa fa-line-chart"></i></a></td></tr>';
     }
 
     function chartForPressure(val,f_id){
-      return '<tr><th>Pressure</th><td  class="badgeorange">'+val+' mbar<a onClick="me.popupChartClick(\'Pressure\','+f_id+')" ><i data="Pressure" title="Graph Pressure" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Pressure</th><td  onClick="me.popupChartClick(\'Pressure\','+f_id+')"  class="badgeorange">'+val+' mbar<a><i data="Pressure" title="Graph Pressure" class="fa fa-line-chart"></i></a></td></tr>';
     }
 
     function back2MainList(){
@@ -374,7 +374,8 @@
               color: color,
               showInLegend: true,
               axisYIndex: 0,
-              dataPoints: paramValue
+              dataPoints: paramValue,
+              xValueFormatString:"MM-DD-YY hh:mm"
             }]
           }
           else{
@@ -419,7 +420,7 @@
           $( newdiv).height('200px');
           $( newdiv).css('margin-bottom', '10px');
           $( newdiv).css('margin-left', '3%');
-          $( newdiv).css('background-image', "url('http://i.imgur.com/XVCnqWS.jpg')");
+          $( newdiv).css('background-image', "url('chartbackground.jpg')");
 
           $( "#graphDiv" ).append( newdiv);
 
@@ -430,6 +431,8 @@
             backgroundColor: "transparent",
             animationEnabled: true,
             zoomEnabled: true,
+            interactivityEnabled: false,
+            //exportEnabled: true,
             axisY:[
             {
               title: paramName,
@@ -438,6 +441,9 @@
               labelFontColor: color,
               titleFontColor: color
             }],
+            axisX:{      
+                valueFormatString: "MM-DD-YY hh:mm"
+            },
             axisY2: {
               title: "Value",
               lineColor: "#7F6084",
@@ -446,7 +452,8 @@
               titleFontColor: "#7F6084"
             },
             toolTip: {
-              shared: true
+              shared: true,
+              enabled: true
             },
             legend: {
               cursor: "pointer",

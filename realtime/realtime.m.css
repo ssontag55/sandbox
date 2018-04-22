@@ -36,14 +36,14 @@
   margin-left: 10px !important;
 }
 .btn{
-  font-size: 12px !important;
+  font-size: 15px !important;
   width: 122px;
   padding: 6px 4px !important;
 }
 .btn span{
   /*right: 0;*/
   margin-left: 1px;
-  font-size: 11px !important; 
+  font-size: 13px !important; 
 }
 
 .btn .badge{
@@ -56,7 +56,7 @@
 }
 
 body{
-	font-size: 13px !important;	
+	font-size: 15px !important;	
 }
 .panel{
 	float: left;
@@ -102,7 +102,7 @@ body,
   width: 100%;
   position: fixed;
   margin-left: 0px;
-  font-family: Comic Sans MS;
+  /*font-family: Comic Sans MS;*/
 } 
 
 #splitd{
@@ -123,15 +123,18 @@ body,
 }
 #clickLocDiv{
   position: absolute;
-  top: 165px;
+  top: 170px;
   width: 97%;
   margin-left: 5px;
-  font-size: 12px;
+  font-size: 14px;
+}
+tr >td {
+  padding-bottom: 3px !important;
 }
 #backDiv{
   margin-top: 110px  !important;
   font-weight: bold !important;
-  font-size: 15px;
+  font-size: 17px;
   padding-left:7px;
   margin-left: 27%;
   line-height: 20px;
@@ -141,7 +144,7 @@ body,
   position: static;
   display: block;
   position: static;
-  height: 312px;
+  height: 340px;
   display: none;
   width: 100%;
   color: white;
@@ -151,7 +154,7 @@ body,
 
 }
 #interpLayerToggle{
-    font-size: 10px !important;
+    font-size: 12px !important;
     position: absolute;
     right: 0px;
     top: 30px;

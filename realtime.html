@@ -70,7 +70,7 @@
           <li>
             <div class="btn-group">
               <button type="button" data='7' class="btn btn badgeyellow">
-                Startbucks <span class="badge badge-light">2</span>
+                Starbucks <span class="badge badge-light">2</span>
               </button>
               <button type="button" data='8' class="btn btn badgegreen">
                 Sheraton <span class="badge badge-light">ok</span>
@@ -610,6 +610,22 @@
           var dataPointsCO_Avg = [];
 
           var paramValue = [];
+          var dateForShark1 = new Date();
+          dateForShark1 = dateForShark1.setDate(dateForShark1.getDate() - 2);
+          var dateForShark2 = new Date();
+          dateForShark2 = dateForShark2.setDate(dateForShark2.getDate() - 4);
+          
+          var airshark = [
+            {
+              x: dateForShark1,
+              y: 30
+            },
+            {
+              x: dateForShark2,
+              y: 30
+            }
+          ];
+
           for (var i = 0; i < data.length; i++) {
             if(param){
               var paramName = param+ '_Avg';
@@ -649,7 +665,14 @@
               color: "#369EAD",
               showInLegend: true,
               axisYIndex: 0,
-              dataPoints: paramValue
+              dataPoints: paramValue,
+              xValueFormatString:"MM-DD-YY hh:mm"
+            },{
+              name: "Aihr SHark",
+              color: "#C24642",
+              showInLegend: true,
+              axisYIndex: 1,
+              dataPoints: airshark
             }]
           }
           else{
@@ -695,6 +718,7 @@
             },*/
             animationEnabled: true,
             zoomEnabled: true,
+            exportEnabled: true,
             axisY:[/*{
               title: "Temp Avg",
               lineColor: "#C24642",
@@ -710,6 +734,9 @@
               labelFontColor: "#369EAD",
               titleFontColor: "#369EAD"
             }],
+            axisX:{      
+                valueFormatString: "MM-DD-YY hh:mm"
+            },
             axisY2: {
               title: "Value",
               lineColor: "#7F6084",
