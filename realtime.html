@@ -27,76 +27,76 @@
   <!-- Sidebar -->
   <div id="sidebar-wrapper">
       <ul class="sidebar-nav" id="stationList">
-          <br>
-          <br>
-          <br>
-          <br>
-          <div class="search-container">
-            <form>
-              <input type="text" placeholder="Search.." name="search" disabled>
-              <button data='search' type="submit"><i class="fa fa-search"></i></button>
-            </form>
-          </div>
-          <li>
-            <div class="btn-group">
-              <button type="button" data='5' class="btn btn badgegreen">
-                Room 1 <span class="badge badge-light">ok</span>
-              </button>
-              <button type="button" data='6' class="btn btn badgeorange">
-                Parking <span class="badge badge-light">3</span>
-              </button>
-            </div>
-          </li>
-          <li>
-            <div class="btn-group">
-              <button type="button" data='1' class="btn btn badgeyellow">
-              Office 1 <span class="badge badge-light">2</span>
-              </button>
-              <button type="button" data='4' class="btn btn badgegreen">
-              Storage <span class="badge badge-light">ok</span>
-              </button>
-            </div>
-          </li>
-          <li>
-            <div class="btn-group">
-              <button type="button" data='3' class="btn btn badgegreen">
-              Office 2 <span class="badge badge-light">ok</span>
-              </button>
-              <button type="button" data='2' class="btn btn badgegreen">
-              Main Office <span class="badge badge-light">ok</span>
-              </button>
-            </div>
-          </li>
-          <li>
-            <div class="btn-group">
-              <button type="button" data='7' class="btn btn badgeyellow">
-                Starbucks <span class="badge badge-light">2</span>
-              </button>
-              <button type="button" data='8' class="btn btn badgegreen">
-                Sheraton <span class="badge badge-light">ok</span>
-              </button>
-            </div>
-          </li>
-           <li>
-            <div class="btn-group">
-              <button type="button" data='9' class="btn btn badgegreen">
-              Geneva 1 <span class="badge badge-light">ok</span>
-              </button>
-              <button type="button" data='10' class="btn btn badgegreen">
-              Geneva 2 <span class="badge badge-light">ok</span>
-              </button>
-            </div>
-          </li>
-           <li>
-            <div class="btn-group">
-              <button type="button" data='11' class="btn btn badgegreen">
-                Singapore <span class="badge badge-light">ok</span>
-              </button>
-              <button type="button" data='12' class="btn btn badgeorange">
-              JFK <span class="badge badge-light">3</span>
+        <br>
+        <br>
+        <br>
+        <br>
+        <div class="search-container">
+          <form>
+            <input type="text" placeholder="Search.." name="search" disabled>
+            <button data='search' type="submit"><i class="fa fa-search"></i></button>
+          </form>
+        </div>
+        <li>
+          <div class="btn-group">
+            <button type="button" data='5' class="btn btn badgegreen">
+              Room 1 <span class="badge badge-light">ok</span>
             </button>
-            </div>
-          </li>
+            <button type="button" data='6' class="btn btn badgeorange">
+              Parking <span class="badge badge-light">3</span>
+            </button>
+          </div>
+        </li>
+        <li>
+          <div class="btn-group">
+            <button type="button" data='1' class="btn btn badgeyellow">
+            Office 1 <span class="badge badge-light">2</span>
+            </button>
+            <button type="button" data='4' class="btn btn badgegreen">
+            Storage <span class="badge badge-light">ok</span>
+            </button>
+          </div>
+        </li>
+        <li>
+          <div class="btn-group">
+            <button type="button" data='3' class="btn btn badgegreen">
+            Office 2 <span class="badge badge-light">ok</span>
+            </button>
+            <button type="button" data='2' class="btn btn badgegreen">
+            Main Office <span class="badge badge-light">ok</span>
+            </button>
+          </div>
+        </li>
+        <li>
+          <div class="btn-group">
+            <button type="button" data='7' class="btn btn badgeyellow">
+              Starbucks <span class="badge badge-light">2</span>
+            </button>
+            <button type="button" data='8' class="btn btn badgegreen">
+              Sheraton <span class="badge badge-light">ok</span>
+            </button>
+          </div>
+        </li>
+         <li>
+          <div class="btn-group">
+            <button type="button" data='9' class="btn btn badgegreen">
+            Geneva 1 <span class="badge badge-light">ok</span>
+            </button>
+            <button type="button" data='10' class="btn btn badgegreen">
+            Geneva 2 <span class="badge badge-light">ok</span>
+            </button>
+          </div>
+        </li>
+         <li>
+          <div class="btn-group">
+            <button type="button" data='11' class="btn btn badgegreen">
+              Singapore <span class="badge badge-light">ok</span>
+            </button>
+            <button type="button" data='12' class="btn btn badgeorange">
+            JFK <span class="badge badge-light">3</span>
+          </button>
+          </div>
+        </li>
       </ul>
       <div id="singleStationDiev">
         <div id="backDiv">
@@ -128,8 +128,8 @@
       <div id="viewDiv">
       </div>
       <div id="closeseries"><i style="float: right;padding: 10px;cursor: pointer;" class="fa fa-window-close" aria-hidden="true"></i></div>
-      <div id="timeseriesDiv">
-      </div>
+      <div id="timeseriesDiv"></div>
+      <div id="shartMainDiv"></div>
   </div>
   <div id="sizeInputDiv">
     <label style="float: right;">TerraBase Data Monitoring
@@ -314,6 +314,7 @@
       $('#timeseriesDiv').hide();
       $('#viewDiv').height($('#splitd').height());
       $('#closeseries').hide();
+      $('#shartMainDiv').hide();
     }
 
     function getRealtimePoints(){
@@ -337,8 +338,8 @@
             
             //Add Dynamic badges
             for (var group in data){ 
-                 me.datalist.push(data[group]);
-                 //$("#container").append($('<option></option>').val(data[group].Location).html(data[group].Location));
+               me.datalist.push(data[group]);
+               //$("#container").append($('<option></option>').val(data[group].Location).html(data[group].Location));
               }
             }
             refreshData();
@@ -353,7 +354,6 @@
       me.map.removeLayer(me.resultLyr);
       me.map.removeLayer(me.markers);
       me.markers.clearLayers();
-      ///var chemID = document.getElementById('chemNameDropdown').value;
 
       me.resultLyr = {
         type: "FeatureCollection",
@@ -369,7 +369,6 @@
             for (var group in me.datalist){ 
               
               var obj = {};
-
               obj.properties = me.datalist[group];
               obj.type = "Feature";
               obj.geometry = {
@@ -407,46 +406,44 @@
                       url: requesturl
                   })
                   .fail(function (error) {
-                      alert("Service Error For Requested Locations");
+                    alert("Service Error For Requested Locations");
                   })
                   .done(function (data) {
                     var dateFormat = new Date(data[0].LocalReadingDt).toLocaleString();
 
-                      //fa-circle
-                      layer.bindPopup('<b><label class="poptitle">'+me.featureName+'</></b><br><table id="popuptable" style="width:100%">'+dateFormat+'</td></tr>'+chartForTemp(data[0].Temp,me.featureID)+chartForCO(data[0].CO,me.featureID)+chartForOzone(data[0].Ozone,me.featureID)+chartForNO(data[0].NO,me.featureID)+chartForNO2(data[0].NO2,me.featureID)+chartForSO2(data[0].SO2,me.featureID)+chartForNOx(data[0].NOx,me.featureID)+chartForPM10(data[0].PM10,me.featureID)+chartForPM25(data[0].PM25,me.featureID)+chartForPressure(data[0].Pressure,me.featureID)+chartForVolatiles(data[0].tVOC,me.featureID)+'</table>').openPopup();
-                      $("#loadinggf").hide();
+                    //fa-circle
+                    layer.bindPopup('<b><label class="poptitle">'+me.featureName+'</></b><br><table id="popuptable" style="width:100%">'+dateFormat+'</td></tr>'+chartForTemp(data[0].Temp,me.featureID)+chartForCO(data[0].CO,me.featureID)+chartForOzone(data[0].Ozone,me.featureID)+chartForNO(data[0].NO,me.featureID)+chartForNO2(data[0].NO2,me.featureID)+chartForSO2(data[0].SO2,me.featureID)+chartForNOx(data[0].NOx,me.featureID)+chartForPM10(data[0].PM10,me.featureID)+chartForPM25(data[0].PM25,me.featureID)+chartForPressure(data[0].Pressure,me.featureID)+chartForVolatiles(data[0].tVOC,me.featureID)+'</table>').openPopup();
+                    $("#loadinggf").hide();
                   });
               });
             },
             pointToLayer: function (feature, latlng) {
+              var pointcolor = '#A6CE39';//green //default
+              if(feature.properties.aliasID == 1339 || feature.properties.aliasID == 1139) {
+                pointcolor = '#FFF200';//yellow
+              }
+              else if(feature.properties.aliasID == 1344){
+                pointcolor = '#F7901E'; //orange
+              }
+              /*else if(feature.properties.aliasID == 1343 ){
+                pointcolor = '#891A1C';//bad
+              }*/
+              /*else if(feature.properties.aliasID == 1340){
+                pointcolor = '#ED1D24';//red
+              }*/
+              /*else if(feature.properties.aliasID == 1341){
+                pointcolor = '#A2064A';//purple
+              }*/
 
-                var pointcolor = '#A6CE39';//green //default
-                if(feature.properties.aliasID == 1339 || feature.properties.aliasID == 1139) {
-                  pointcolor = '#FFF200';//yellow
-                }
-                else if(feature.properties.aliasID == 1344){
-                  pointcolor = '#F7901E'; //orange
-                }
-                /*else if(feature.properties.aliasID == 1343 ){
-                  pointcolor = '#891A1C';//bad
-                }*/
-                /*else if(feature.properties.aliasID == 1340){
-                  pointcolor = '#ED1D24';//red
-                }*/
-                /*else if(feature.properties.aliasID == 1341){
-                  pointcolor = '#A2064A';//purple
-                }*/
-
-                var geojsonMarkerOptions = {
-                    radius: 10,
-                    fillColor: pointcolor,
-                    color: "#000",
-                    weight: 1,
-                    opacity: .9,
-                    fillOpacity: 0.7
-                };
-
-                return L.circleMarker(latlng, geojsonMarkerOptions);
+              var geojsonMarkerOptions = {
+                  radius: 10,
+                  fillColor: pointcolor,
+                  color: "#000",
+                  weight: 1,
+                  opacity: .9,
+                  fillOpacity: 0.7
+              };
+              return L.circleMarker(latlng, geojsonMarkerOptions);
             }
           });
 
@@ -454,9 +451,8 @@
           me.map.addLayer(me.markers);      
           if(me.maploadedzoom == false){
             me.map.fitBounds(me.resultLyr.getBounds());
-            me.maploadedzoom = true;  
+            me.maploadedzoom = true;
           }
-          
         }
         catch (e){
           alert("There is no valid data in this query.<br>"+e);
@@ -473,42 +469,34 @@
     function chartForCO(val,f_id){
       return '<tr><th>Carbon Monoxide</th><td  class="badgegreen">'+val+' ppm<a onClick="me.popupChartClick(\'CO\','+f_id+')" ><i data="CO" title="Graph CO" class="fa fa-line-chart"></i></a></td></tr>';
     }
-
     function chartForTemp(val,f_id){
       return '<tr><th>Temperature</th><td  class="badgeorange">'+val+' °F<a onClick="me.popupChartClick(\'Temp\','+f_id+')" ><i data="Temp" title="Graph Temperature" class="fa fa-line-chart"></i></a></td></tr>';
     }
     function chartForOzone(val,f_id){
       return '<tr><th>Ozone</th><td  class="badgeyellow">'+val+' ppm<a onClick="me.popupChartClick(\'Ozone\','+f_id+')" ><i data="Ozone" title="Graph Ozone" class="fa fa-line-chart"></i></a></td></tr>';
     }
-
     function chartForVolatiles(val,f_id){
       return '<tr><th>Volatiles</th><td  class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'tVOC\','+f_id+')" ><i data="tVOC" title="Graph Volatiles" class="fa fa-line-chart"></i></a></td></tr>';
     }
-
     function chartForNO(val,f_id){
       return '<tr><th>Nitric Oxide</th><td  class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'NO\','+f_id+')" ><i data="NOx" title="Graph NO" class="fa fa-line-chart"></i></a></td></tr>';
     }
-
     function chartForNO2(val,f_id){
-      return '<tr><th>Nitrogen Oxides</th><td  class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'NO2\','+f_id+')" ><i data="NO2" title="Graph NO2" class="fa fa-line-chart"></i></a></td></tr>';
+      return '<tr><th>Nitrogen Dioxide</th><td  class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'NO2\','+f_id+')" ><i data="NO2" title="Graph NO2" class="fa fa-line-chart"></i></a></td></tr>';
     }
-
     function chartForSO2(val,f_id){
       
       return '<tr><th>Sulphur Dioxide</th><td  class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'SO2\','+f_id+')" ><i data="SO2" title="Graph SO2" class="fa fa-line-chart"></i></a></td></tr>';
     }
-
     function chartForNOx(val,f_id){
       return '<tr><th>Nitrogen Oxides</th><td class="badgegreen">'+val+' ppb<a onClick="me.popupChartClick(\'NOx\','+f_id+')" ><i data="NOx" data="NOx" title="Graph NOx" class="fa fa-line-chart"></i></a></td></tr>';
     }
-
     function chartForPM10(val,f_id){
       return '<tr><th>Particulates < 10 μm</th><td class="badgeyellow">'+val+' μg/m³<a onClick="me.popupChartClick(\'PM10\','+f_id+')" ><i title="Graph PM10" class="fa fa-line-chart"></i></a></td></tr>';
     }
     function chartForPM25(val,f_id){
       return '<tr><th>Particulates < 25 μm</th><td  class="badgegreen">'+val+' μg/m³<a onClick="me.popupChartClick(\'PM25\','+f_id+')" ><i data="PM25" title="Graph PM25" class="fa fa-line-chart"></i></a></td></tr>';
     }
-
     function chartForPressure(val,f_id){
       return '<tr><th>Pressure</th><td  class="badgeorange">'+val+' mbar<a onClick="me.popupChartClick(\'Pressure\','+f_id+')" ><i data="Pressure" title="Graph Pressure" class="fa fa-line-chart"></i></a></td></tr>';
     }
@@ -524,12 +512,14 @@
       var activeID;
       $('#stationList').hide(600);
       $('#singleStationDiev').show(600);
+
       if(Number($(this).attr('data'))){
         activeID = Number($(this).attr('data'));
       }
       else{
         activeID = b;
       }
+      
       $("#loadinggf").show();
       var idClick;
       var latclick;
@@ -548,33 +538,103 @@
       }
 
       setTimeout(function(){ map.setView([latclick, longclick], 17) }, 1000);
-      
-      //me.renderChart(idClick);
       var dateString = new Date().toISOString();
+      //me.renderChart(idClick);
       //var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.aliasID+"&endDt="+dateString;
 
       var requesturl = "https://dev.terrabase.com/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+idClick+"&endDt="+dateString;
 
-       $.ajax({
-            type: "GET",
-            url: requesturl
-        })
-        .fail(function (error) {
-            alert("Service Error For Requested Locations");
-        })
-        .done(function (data) {
-          var dateFormat = new Date(data[0].LocalReadingDt).toLocaleString();
+      $.ajax({
+          type: "GET",
+          url: requesturl
+      })
+      .fail(function (error) {
+          alert("Service Error For Requested Locations");
+      })
+      .done(function (data) {
+        var dateFormat = new Date(data[0].LocalReadingDt).toLocaleString();
 
-          $('#labelStation').html(me.featureName);
+        $('#labelStation').html(me.featureName);
 
-          $('#clickLocDiv').html('<b><table id="popuptable" style="width:100%">'+dateFormat+'</td></tr>'+chartForTemp(data[0].Temp,me.featureID)+chartForCO(data[0].CO,me.featureID)+chartForOzone(data[0].Ozone,me.featureID)+chartForNO(data[0].NO,me.featureID)+chartForNO2(data[0].NO2,me.featureID)+chartForSO2(data[0].SO2,me.featureID)+chartForNOx(data[0].NOx,me.featureID)+chartForPM10(data[0].PM10,me.featureID)+chartForPM25(data[0].PM25,me.featureID)+chartForPressure(data[0].Pressure,me.featureID)+chartForVolatiles(data[0].tVOC,me.featureID)+'</table>');
-          $("#loadinggf").hide();
-        });
+        $('#clickLocDiv').html('<b><table id="popuptable" style="width:100%">'+dateFormat+'</td></tr>'+chartForTemp(data[0].Temp,me.featureID)+chartForCO(data[0].CO,me.featureID)+chartForOzone(data[0].Ozone,me.featureID)+chartForNO(data[0].NO,me.featureID)+chartForNO2(data[0].NO2,me.featureID)+chartForSO2(data[0].SO2,me.featureID)+chartForNOx(data[0].NOx,me.featureID)+chartForPM10(data[0].PM10,me.featureID)+chartForPM25(data[0].PM25,me.featureID)+chartForPressure(data[0].Pressure,me.featureID)+chartForVolatiles(data[0].tVOC,me.featureID)+'</table>');
+        $("#loadinggf").hide();
+      });
     }
 
     function popupChartClick(b,id){
       $("#loadinggf").show();
       me.renderChart(id, b);
+    }
+
+    function showAihrShark(){
+      var shark = L.control({position: 'bottomleft'});
+      $('#shartMainDiv').show();
+
+      var datachart = [{
+        name: "AIHR Shark",
+        color: "#C24642",
+        showInLegend: true,
+        dataPoints: me.airsharkdata
+      }];
+
+      me.sharkchart = new CanvasJS.Chart('shartMainDiv', {            
+        title:{
+          text: "AIHR SHARK"              
+        },
+        axisY: {
+          includeZero: false,
+          suffix: " ug",
+          //maximum: 40,
+          gridThickness: 0
+        },
+        toolTip:{
+          contentFormatter: function(e){
+            return ( "AIHR Shark: " + e.entries[0].dataPoint.y+" ug <br>@  "+e.entries[0].dataPoint.x*30 + " degrees" ) ;
+          },
+        },
+        data: [{
+          type: "line",
+          fillOpacity: 0.8,
+          color: "#91AAB1",
+          name: "AIHR Shark",
+          dataPoints: me.airsharkdata
+          /*[
+            { label: "Monday", y: [15, 26], name: "rainy" },
+            { label: "Tuesday", y: [15, 27], name: "rainy" },
+            { label: "Wednesday", y: [13, 27], name: "sunny" },
+            { label: "Thursday", y: [14, 27], name: "sunny" },
+            { label: "Friday", y: [15, 26], name: "cloudy" },
+            { label: "Saturday", y: [17, 26], name: "sunny" },
+            { label: "Saturday", y: [17, 26], name: "sunny" },
+            { label: "Saturday", y: [17, 26], name: "sunny" },
+            { label: "Saturday", y: [17, 26], name: "sunny" },
+            { label: "Saturday", y: [17, 26], name: "sunny" },
+            { label: "Saturday", y: [17, 26], name: "sunny" },
+            { label: "Sunday", y: [16, 27], name: "rainy" }
+          ]*/
+        }]
+      });
+      me.sharkchart.render();
+      me.images = [];    
+      me.addImages(me.sharkchart);
+    }
+
+    function addImages(chart) {
+      for(var i = 0; i < me.sharkchart.data[0].dataPoints.length; i++){
+        var dpsNumber = me.sharkchart.data[0].dataPoints[i].x;
+        
+        images.push($("<img>").attr("src", "realtime/arrow.png"));
+
+        me.images[i].attr("class", dpsNumber).appendTo($("#shartMainDiv>.canvasjs-chart-container"));
+        positionImage(me.images[i], i, dpsNumber);
+      }
+    }
+
+    function positionImage(image, index, dpsNumber) {
+      var imageCenter = me.sharkchart.axisX[0].convertValueToPixel(me.sharkchart.data[0].dataPoints[index].x);
+      var imageTop =  me.sharkchart.axisY[0].convertValueToPixel(me.sharkchart.axisY[0].maximum);
+      var degrees = 30*dpsNumber;
+      image.width("40px").css({ "left": imageCenter - 20 + "px", "position": "absolute","top":imageTop + "px", "position": "absolute", 'transform': 'rotate('+degrees+'deg)'});
     }
 
     function renderChart(idClick, param){
@@ -586,7 +646,6 @@
       var dateStringFrom = new Date(dateFrom).toISOString();
 
       //var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/Hourly?Id="+idClick+"&endDt="+dateStringTo+"&startDt="+dateStringFrom;
-
       var requesturl = "https://dev.terrabase.com/api/Tenant/1190/Report/Custom/IndoorSensor/Data/Hourly?Id="+idClick+"&endDt="+dateStringTo+"&startDt="+dateStringFrom;
 
       $("#loadinggf").show();
@@ -615,14 +674,12 @@
           var dateForShark2 = new Date();
           dateForShark2 = dateForShark2.setDate(dateForShark2.getDate() - 4);
           
-          var airshark = [
-            {
+          var airshark = [{
               x: dateForShark1,
-              y: 30
-            },
-            {
+              y: 60
+            },{
               x: dateForShark2,
-              y: 30
+              y: 60
             }
           ];
 
@@ -657,7 +714,6 @@
             }           
           }
 
-
           if(param){
             var dataSupply = [{
               //type: "line",
@@ -668,10 +724,12 @@
               dataPoints: paramValue,
               xValueFormatString:"MM-DD-YY hh:mm"
             },{
-              name: "Aihr SHark",
+              name: "AIHR Shark",
               color: "#C24642",
               showInLegend: true,
               axisYIndex: 1,
+              xValueFormatString:"MM-DD-YY hh:mm",
+              click: me.showAihrShark,
               dataPoints: airshark
             }]
           }
@@ -753,11 +811,12 @@
             },
             data: dataSupply
           });
-        chart.render();
-        $("#loadinggf").hide();
-        $('#closeseries').show();
+          chart.render();
+          $("#loadinggf").hide();
+          $('#closeseries').show();
       });
     }
+
     function toggleInterpolateLayer(e){
         if(me.resultLyr.options){
           if($('#interpLayerToggle').prop('checked') == true){
@@ -776,7 +835,6 @@
       }
 
       me.layer = L.esri.basemapLayer(basemap);
-
       me.map.addLayer(me.layer);
     }
 
@@ -803,6 +861,152 @@
       }
       logo.addTo(map);
     }
+
+    me.airsharkdata = [{
+      "Location": "AIHR Shark 2",
+      "x": 12,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 35,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 11,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 41,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 10,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 55,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 9,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 160,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 8,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 210,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 7,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 160,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 6,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 91,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 5,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 77,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 4,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 74,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 3,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 53,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 2,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 42,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    },{
+      "Location": "AIHR Shark 2",
+      "x": 1,
+      "Start Date/Time": "11/10/17 10:45:00",
+      "End Date/Time": "11/21/17 10:30:00",
+      "Method": "MET9688",
+      "Parameter": "Total Hydrocarbons",
+      "y": 35,
+      "Qualifier": "",
+      "Unit": "ug",
+      "Sample Delivery Group": "L426458",
+      "Laboratory": "SGS Galson"
+    }]
 </script>
 </body>
 </html>

@@ -126,6 +126,15 @@ body,
   /*font-family: Comic Sans MS;*/
 } 
 
+#shartMainDiv{
+  float: left;
+  width: 400px;
+  height: 140px;
+  position: absolute;
+  bottom: 190px;
+  left: 50px;
+}
+
 #splitd{
 	height: 100%;
 	width: 100%;
