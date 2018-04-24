@@ -130,6 +130,7 @@ body,
   float: left;
   width: 400px;
   height: 140px;
+  display: none;
   position: absolute;
   bottom: 190px;
   left: 50px;

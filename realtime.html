@@ -339,7 +339,7 @@
             //Add Dynamic badges
             for (var group in data){ 
                me.datalist.push(data[group]);
-               //$("#container").append($('<option></option>').val(data[group].Location).html(data[group].Location));
+               $("#container").append($('<option></option>').val(data[group].Location).html(data[group].Location));
               }
             }
             refreshData();
@@ -598,20 +598,6 @@
           color: "#91AAB1",
           name: "AIHR Shark",
           dataPoints: me.airsharkdata
-          /*[
-            { label: "Monday", y: [15, 26], name: "rainy" },
-            { label: "Tuesday", y: [15, 27], name: "rainy" },
-            { label: "Wednesday", y: [13, 27], name: "sunny" },
-            { label: "Thursday", y: [14, 27], name: "sunny" },
-            { label: "Friday", y: [15, 26], name: "cloudy" },
-            { label: "Saturday", y: [17, 26], name: "sunny" },
-            { label: "Saturday", y: [17, 26], name: "sunny" },
-            { label: "Saturday", y: [17, 26], name: "sunny" },
-            { label: "Saturday", y: [17, 26], name: "sunny" },
-            { label: "Saturday", y: [17, 26], name: "sunny" },
-            { label: "Saturday", y: [17, 26], name: "sunny" },
-            { label: "Sunday", y: [16, 27], name: "rainy" }
-          ]*/
         }]
       });
       me.sharkchart.render();
@@ -676,10 +662,10 @@
           
           var airshark = [{
               x: dateForShark1,
-              y: 60
+              y: 680
             },{
               x: dateForShark2,
-              y: 60
+              y: 680
             }
           ];
 
@@ -714,7 +700,7 @@
             }           
           }
 
-          if(param){
+          if(param == 'tVOC'){
             var dataSupply = [{
               //type: "line",
               name: paramName,
@@ -730,11 +716,21 @@
               axisYIndex: 1,
               xValueFormatString:"MM-DD-YY hh:mm",
               click: me.showAihrShark,
+              toolTipContent: "AIHR SHARK Event",
               dataPoints: airshark
             }]
           }
           else{
             var dataSupply = [{
+              //type: "line",
+              name: paramName,
+              color: "#369EAD",
+              showInLegend: true,
+              axisYIndex: 0,
+              dataPoints: paramValue,
+              xValueFormatString:"MM-DD-YY hh:mm"
+            }]
+            /*var dataSupply = [{
               type: "line",
               name: "Humidity",
               color: "#369EAD",
@@ -767,7 +763,7 @@
               dataPoints: dataPointsSO2_Avg
             }];
 
-            var paramName = 'Humidity';
+            var paramName = 'Humidity';*/
           }
 
           var chart = new CanvasJS.Chart("timeseriesDiv", {
@@ -803,7 +799,7 @@
               titleFontColor: "#7F6084"
             },
             toolTip: {
-              shared: true
+              shared: false
             },
             legend: {
               cursor: "pointer",
