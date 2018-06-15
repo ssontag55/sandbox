@@ -338,6 +338,7 @@
             
             //Add Dynamic badges
             for (var group in data){ 
+               data[group].AliasId = data[group].ID;
                me.datalist.push(data[group]);
                $("#container").append($('<option></option>').val(data[group].Location).html(data[group].Location));
               }
@@ -386,17 +387,17 @@
             onEachFeature:function(feature, layer){
 
               var dateString = new Date().toISOString();
-              //var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.aliasID+"&endDt="+dateString;
+              //var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.AliasId+"&endDt="+dateString;
               //hack remove
-              if(feature.properties.aliasID == 1139){
-                feature.properties.aliasID = 1339;
+              if(feature.properties.AliasId == 1139){
+                feature.properties.AliasId = 1339;
               }
 
-              var requesturl = "https://dev.terrabase.com/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.aliasID+"&endDt="+dateString;
+              var requesturl = "https://dev.terrabase.com/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.AliasId+"&endDt="+dateString;
 
               layer.on('click', function(e){
                   me.featureName = feature.properties.Location;
-                  me.featureID = feature.properties.aliasID;
+                  me.featureID = feature.properties.AliasId;
                   me.activeID = feature.properties.$id;
 
                   $("#loadinggf").show();
@@ -419,19 +420,19 @@
             },
             pointToLayer: function (feature, latlng) {
               var pointcolor = '#A6CE39';//green //default
-              if(feature.properties.aliasID == 1339 || feature.properties.aliasID == 1139) {
+              if(feature.properties.AliasId == 1339 || feature.properties.AliasId == 1139) {
                 pointcolor = '#FFF200';//yellow
               }
-              else if(feature.properties.aliasID == 1344){
+              else if(feature.properties.AliasId == 1344){
                 pointcolor = '#F7901E'; //orange
               }
-              /*else if(feature.properties.aliasID == 1343 ){
+              /*else if(feature.properties.AliasId == 1343 ){
                 pointcolor = '#891A1C';//bad
               }*/
-              /*else if(feature.properties.aliasID == 1340){
+              /*else if(feature.properties.AliasId == 1340){
                 pointcolor = '#ED1D24';//red
               }*/
-              /*else if(feature.properties.aliasID == 1341){
+              /*else if(feature.properties.AliasId == 1341){
                 pointcolor = '#A2064A';//purple
               }*/
 
@@ -527,20 +528,20 @@
 
       for (var group in me.datalist){ 
           
-          if(me.datalist[group].$id == activeID){
-            idClick = me.datalist[group].aliasID;
-            latclick=me.datalist[group].Latitude;
-            longclick=me.datalist[group].Longitude;
-            me.featureName = me.datalist[group].Location;
-            me.featureID = me.datalist[group].aliasID;
-            me.activeID = me.datalist[group].$id;
+          if(me.datalist[Number(group)].$id == activeID){
+            idClick = me.datalist[Number(group)].AliasId;
+            latclick=me.datalist[Number(group)].Latitude;
+            longclick=me.datalist[Number(group)].Longitude;
+            me.featureName = me.datalist[Number(group)].Location;
+            me.featureID = me.datalist[Number(group)].AliasId;
+            me.activeID = me.datalist[Number(group)].$id;
           }
       }
 
       setTimeout(function(){ map.setView([latclick, longclick], 17) }, 1000);
       var dateString = new Date().toISOString();
       //me.renderChart(idClick);
-      //var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.aliasID+"&endDt="+dateString;
+      //var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.AliasId+"&endDt="+dateString;
 
       var requesturl = "https://dev.terrabase.com/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+idClick+"&endDt="+dateString;
 

@@ -162,7 +162,6 @@
     }
 
     function getRealtimePoints(){
-
       //var reqUrl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Locations";
       var reqUrl = "https://dev.terrabase.com/api/Tenant/1190/Report/Custom/IndoorSensor/Locations";
       //var reqUrl = "realtime/points.json";
@@ -179,7 +178,6 @@
         })
         .done(function (data) {
           if(data.length>0){
-            
             //Add Dynamic badges
             for (var group in data){ 
                  me.datalist.push(data[group]);
@@ -187,9 +185,7 @@
               }
             }
             //refreshData();
-
-          $('.btn').click(me.badgeCLick);
-
+            $('.btn').click(me.badgeCLick);
       });
     }
 
@@ -267,18 +263,18 @@
       for (var group in me.datalist){ 
           
           if(me.datalist[group].$id == activeID){
-            idClick = me.datalist[group].aliasID;
-            latclick=me.datalist[group].Latitude;
-            longclick=me.datalist[group].Longitude;
-            me.featureName = me.datalist[group].Location;
-            me.featureID = me.datalist[group].aliasID;
-            me.activeID = me.datalist[group].$id;
+            idClick = me.datalist[Number(group)].AliasId;
+            latclick=me.datalist[Number(group)].Latitude;
+            longclick=me.datalist[Number(group)].Longitude;
+            me.featureName = me.datalist[Number(group)].Location;
+            me.featureID = me.datalist[Number(group)].AliasId;
+            me.activeID = me.datalist[Number(group)].$id;
           }
       }
       
       //me.renderChart(idClick);
       var dateString = new Date().toISOString();
-      //var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.aliasID+"&endDt="+dateString;
+      //var requesturl = "https://localhost:44321/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+feature.properties.AliasId+"&endDt="+dateString;
 
       var requesturl = "https://dev.terrabase.com/api/Tenant/1190/Report/Custom/IndoorSensor/Data/One?Id="+idClick+"&endDt="+dateString;
 
