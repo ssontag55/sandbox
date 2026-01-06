@@ -27,17 +27,29 @@ const parseCheckedState = (visibleItems: LegendItems['visible'], keys: LegendIte
 
 const TableOfContents = (props: Props) => {
   const [tabVisible, setTabVisible] = useState(false);
-  const [checkedCustomNodes, setCheckedCustomNodes] = useState<string[]>([]); // TODO: Should be refactored to lift state up into parent
 
   const customLayers = Object.entries(props.legendItems.keys).map(([value, children]) =>
     buildCustomTocNode(value, props.legendItems.colors, props.showCheckOnDefault ?? false, children)
   );
-  const gisLayers = props.legendItems.gislayers.map(buildGisLayerTocNode);
-  const nodes = [...customLayers, ...gisLayers].map((node) => node);
+  
+  const visible = props.legendItems.visible || {};
+  const serviceMetadata = (props.legendItems as any).serviceMetadata as Map<string, any> | undefined;
+  
+  // Build nodes - they rebuild when legend loads (for legend updates)
+  // The LegendContent component will re-render when layerJson prop changes
+  const gisLayers = props.legendItems.gislayers.map((layer) => 
+    buildGisLayerTocNode(layer, serviceMetadata?.get(layer.layer_name))
+  );
+  const nodes = [...customLayers, ...gisLayers];
+  
+  // Calculate checked array - ensure it includes all visible GIS layers
   const checked = [
-    ...parseCheckedState(props.legendItems.visible, props.legendItems.keys),
-    ...checkedCustomNodes,
+    ...parseCheckedState(visible, props.legendItems.keys),
+    ...props.legendItems.gislayers
+      .filter((layer) => visible[layer.layer_name] === true)
+      .map((layer) => layer.layer_name),
   ];
+  
   const tocState = {
     nodes: nodes,
     checked: checked,
@@ -48,30 +60,37 @@ const TableOfContents = (props: Props) => {
     const layer = props.legendItems.gislayers.find(
       ({ layer_name }) => layer_name === checkedItem.value
     );
-    props.toggleVisible(checkedItem.value, checkedItem.checked, layer, nextChecked);
-    // See comment above. All this extra internal "checked" state mgmt is a necessary evil until this component's API can be completely overhauled to manage checked, expanded, and visible state better
-    if (layer) {
-      const checkedLayer = nextChecked.find((item) => item === layer.layer_name);
-      if (checkedLayer) {
-        const nextState = [...checkedCustomNodes, checkedLayer];
-        setCheckedCustomNodes(nextState);
-      } else {
-        const nextState = checkedCustomNodes.filter((item) => item !== layer.layer_name);
-        setCheckedCustomNodes(nextState);
-      }
+    const isChecked = checkedItem.checked === true;
+    props.toggleVisible(checkedItem.value, isChecked, layer, nextChecked);
+  }
+
+  function handleExpand(expanded: string[]) {
+    props.toggleExpanded(expanded);
+    
+    // Fetch metadata for expanded GIS layers
+    if ((props.legendItems as any).onExpand) {
+      expanded.forEach((expandedValue) => {
+        const isGisLayer = props.legendItems.gislayers.some(
+          (layer) => layer.layer_name === expandedValue
+        );
+        if (isGisLayer) {
+          (props.legendItems as any).onExpand(expandedValue);
+        }
+      });
     }
   }
 
+
   return tabVisible ? (
     <Card className="toc">
-      <div style={{ width: '280px' }}>
+      <div style={{ width: '280px',maxHeight: '680px', overflowY: 'auto' }}>
         <CustomTOC
           id="main-toc"
           nodes={tocState.nodes}
-          checked={tocState.checked}
+          checked={checked}
           expanded={tocState.expanded}
           onCheck={handleChecked}
-          onExpand={(expanded) => props.toggleExpanded(expanded)}
+          onExpand={handleExpand}
           checkModel="all"
         />
         <div

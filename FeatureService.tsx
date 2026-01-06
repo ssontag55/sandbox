@@ -224,7 +224,51 @@ export default class FeatureService {
 
   setToken(token) {
     this._esriServiceOptions.token = token;
-    this._clearAndRefreshTiles();
+    
+    // If service wasn't initialized due to auth error, re-initialize now
+    if (this.serviceMetadata === null) {
+      this._getServiceMetadata().then(() => {
+        if (!this.supportsPbf) {
+          if (!this.supportsGeojson) {
+            this._map.removeSource(this.sourceId);
+            throw new Error('Server does not support PBF or GeoJSON query formats.');
+          }
+          this._esriServiceOptions.f = 'geojson';
+        }
+
+        if (this.serviceMetadata.popupInfo) {
+          this._esriServiceOptions.popupInfo = this.serviceMetadata.popupInfo;
+        }
+
+        if (this._esriServiceOptions.useSeviceBounds) {
+          const serviceExtent = this.serviceMetadata.extent;
+          if (serviceExtent.spatialReference.wkid === 4326) {
+            this._setBounds([
+              serviceExtent.xmin,
+              serviceExtent.ymin,
+              serviceExtent.xmax,
+              serviceExtent.ymax,
+            ]);
+            this._continueInitialization();
+          } else {
+            return this._projectBounds().then(() => {
+              this._continueInitialization();
+            });
+          }
+        } else {
+          this._continueInitialization();
+        }
+      }).catch((error) => {
+        if (error instanceof EsriAuthError) {
+          if (this._esriServiceOptions.onAuthError) {
+            this._esriServiceOptions.onAuthError(error);
+          }
+        }
+      });
+    } else {
+      // Service already initialized, just refresh data with new token
+      this._clearAndRefreshTiles();
+    }
   }
 
   _createOrGetTileIndex(zoomLevel) {
@@ -814,6 +858,25 @@ export default class FeatureService {
   }
 
   /**
+   * Get displayField for this service
+   */
+  getDisplayField() {
+    return this.serviceMetadata?.displayField || this.serviceMetadata?.fields?.find((f: any) => f.type === 'esriFieldTypeString' && f.name)?.name || null;
+  }
+
+  /**
+   * Get layerJson (service metadata) for this service
+   * This is used for generating legends
+   */
+  getLayerJson() {
+    if (!this.serviceMetadata) return null;
+    return {
+      ...this.serviceMetadata,
+      name: this.sourceId,
+    };
+  }
+
+  /**
    * Generate ESRI token from username/password
    */
   static async generateEsriToken(serverUrl: string, username: string, password: string): Promise<string> {
@@ -887,30 +950,17 @@ export default class FeatureService {
           redirect: 'follow' // Follow redirects automatically
         };
 
-        // Also set Referer header for good measure
-        if (isArcGISOnline) {
-          (fetchOptions.headers as Record<string, string>)['Referer'] = referer;
-        }
-
         const response = await fetch(tokenUrl, fetchOptions);
-
-        // Handle redirects manually if needed
-        if (response.status === 301 || response.status === 302 || response.status === 303 || 
-            response.status === 307 || response.status === 308) {
-          const location = response.headers.get('location');
-          if (location) {
-            // Try the redirect location
-            const redirectUrl = new URL(location, tokenUrl).href;
-            const redirectResponse = await fetch(redirectUrl, fetchOptions);
-            return await this.processTokenResponse(redirectResponse);
-          }
-        }
-
         return await this.processTokenResponse(response);
       } catch (err: any) {
-        if (err.message && !err.message.includes('Invalid token endpoint') && 
-            !err.message.includes('Authentication failed')) {
-          throw err; // Re-throw if it's not about the endpoint
+        // Re-throw network/CORS errors immediately
+        if (err.message?.match(/CORS|Failed to fetch|NetworkError|network/i)) {
+          throw new Error(`Network error: ${err.message}`);
+        }
+        
+        // For other errors, try the next endpoint
+        if (err.message && !err.message.match(/Invalid token endpoint|Authentication failed/i)) {
+          throw err;
         }
         lastError = err;
       }
@@ -921,30 +971,12 @@ export default class FeatureService {
   }
 
   private static async processTokenResponse(response: Response): Promise<string> {
-    if (!response.ok) {
-      // Check if it's a redirect that wasn't followed
-      if (response.status === 301 || response.status === 302 || response.status === 303 ||
-          response.status === 307 || response.status === 308) {
-        throw new Error('Token endpoint redirected. This server may require a different authentication method.');
-      }
-      throw new Error(`Authentication failed: Server returned ${response.status}`);
-    }
-
-    const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      // Server returned HTML or other non-JSON response
-      const text = await response.text();
-      if (text.includes('<html') || text.includes('<!DOCTYPE')) {
-        throw new Error('Invalid token endpoint. This server may not support username/password authentication. Try using a token instead.');
-      }
-      throw new Error('Server returned an unexpected response format');
-    }
-
     const data = await response.json();
     
-    if (data.error) {
-      const errorMsg = data.error.message || data.error.details?.[0] || 'Authentication failed';
-      throw new Error(errorMsg);
+    if (!response.ok || data.error) {
+      const errorMsg = data.error?.message || data.error?.details?.[0] || `Server returned ${response.status}`;
+      const errorCode = data.error?.code ? ` (code: ${data.error.code})` : '';
+      throw new Error(`${errorMsg}${errorCode}`);
     }
 
     if (!data.token) {

@@ -4,7 +4,7 @@ import { IconLayer } from '@deck.gl/layers';
 import DeckGL from '@deck.gl/react';
 
 import { HighlightAlt, HighlightOff } from '@mui/icons-material';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Fab, TextField, Typography } from '@mui/material';
+import { Box, Fab, Typography } from '@mui/material';
 import { SxProps } from '@mui/system';
 import { SelectionLayer } from '@nebula.gl/layers';
 import FEATURE_FLAGS from 'config/featureFlags';
@@ -26,6 +26,9 @@ import { LayerTypes } from './useLayerConfigurations';
 import { BaseMapSelector } from '../BaseMapSelector';
 
 import FeatureService, { EsriAuthError } from '../FeatureService';
+import { formatEsriPopup, formatSimplePopup  } from '../../../utils/mapPopupHelper';
+import { addMapServerRaster, queryMapServer, isAuthError } from '../../../utils/mapServerHelper';
+import { EsriAuthModal } from '../EsriAuthModal';
 
 import { DataSearch } from '../Search/DataSearch';
 import TableOfContents, { buildChildValue } from '../TableOfContents';
@@ -117,6 +120,14 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
   
   // Store FeatureService instances for token updates
   const featureServiceRefs = useRef<Map<string, FeatureService>>(new Map());
+  
+  // Store MapServer layer info (URL and token) for click handling
+  const mapServerLayers = useRef<Map<string, { url: string; token: string | null }>>(new Map());
+  
+  // Store service metadata in a REF (not state) to avoid re-renders that break checkboxes
+  const serviceMetadataRef = useRef<Map<string, any>>(new Map());
+  // Counter to force legend re-render when metadata loads (without affecting TOC)
+  const [legendVersion, setLegendVersion] = useState(0);
 
   const initialBasemap = useArcGISBasemap
     ? `${basemapURL}/ArcGIS:LightGray?type=style&token=${ESRI_TOKEN}`
@@ -171,116 +182,166 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
 
   // set the visibleLayer state, the callback toggleVisible will update this
   // based on what node is checked in the checkbox-tree.
-  const initVisible = props.toc ? buildInitialVisibleLayers(props.toc.keys) : null;
-  const [visibleLayers, setVisibleLayers] = useState(initVisible);
+  // Initialize as empty object, never null - this prevents React from resetting it
+  const [visibleLayers, setVisibleLayers] = useState<Record<string, boolean>>(() => {
+    if (props.toc) {
+      return buildInitialVisibleLayers(props.toc.keys);
+    }
+    return {};
+  });
 
-  const toggleVisible = (lastCheckedName, _, customLayer, selectedNodes) => {
+  const toggleVisible = (lastCheckedName, isChecked, customLayer, selectedNodes) => {
     /*
-        This is the type of function the TOC looks for.
-
-        If you are wondering about the first 3 arguments, <TableOfContents/>
-        expects these values as function args for the prop toggleVisible.
-        See the function handleChecked in TableOfContents for more details.
+        Update state and toggle layer visibility on map.
     */
-    const newVisibleLayers = {};
+    if (!lastCheckedName) return;
 
-    displayedCustomLayerList.forEach((d) => {
-      newVisibleLayers[d.layer_name] = false;
-    });
+    let newVisibleLayers: Record<string, boolean>;
 
-    selectedNodes.forEach((key) => {
-      newVisibleLayers[key] = true;
-    });
+    // For GIS layers: use nextChecked array to determine state
+    if (customLayer) {
+      newVisibleLayers = {};
+      // Reset all GIS layers to false
+      displayedCustomLayerList.forEach((d: any) => {
+        newVisibleLayers[d.layer_name] = false;
+      });
+      // Set checked layers to true (from selectedNodes/nextChecked)
+      // Also explicitly ensure the clicked layer is included if isChecked is true
+      const checkedSet = new Set(selectedNodes);
+      if (isChecked && !checkedSet.has(lastCheckedName)) {
+        checkedSet.add(lastCheckedName);
+      } else if (!isChecked) {
+        checkedSet.delete(lastCheckedName);
+      }
+      checkedSet.forEach((key: string) => {
+        newVisibleLayers[key] = true;
+      });
+    } else {
+      // For other layers: use original logic
+      newVisibleLayers = {};
+      
+      displayedCustomLayerList.forEach((d: any) => {
+        newVisibleLayers[d.layer_name] = false;
+      });
+      
+      selectedNodes.forEach((key: string) => {
+        newVisibleLayers[key] = true;
+      });
+    }
 
     setVisibleLayers(newVisibleLayers);
 
-    if (!mapRef.current) {
-      return;
-    }
+    if (!mapRef.current) return;
 
     const cMap = mapRef.current.getMap();
 
+    // For GIS layers, toggle visibility
     if (cMap && customLayer) {
-      const isVisible = newVisibleLayers[lastCheckedName];
-      const layer = displayedCustomLayerList.find((l) => l.layer_name === lastCheckedName);
+      // Handle both MapServer (exact ID) and FeatureServer (prefixed IDs)
+      const allLayers = cMap.getStyle()?.layers || [];
+      const matchingLayers = allLayers.filter((l: any) => 
+        l.id === lastCheckedName || l.id.startsWith(`${lastCheckedName}-`)
+      );
       
-      if (!layer) return;
-      
-      // Check if URL is a MapServer (not FeatureServer)
-      const isMapServer = /\/MapServer(\/\d+)?$/i.test(layer.layer_url) && !/FeatureServer/i.test(layer.layer_url);
-      
-      if (isMapServer) {
-        // MapServer raster layer - single layer ID
-        const layerExists = cMap.getLayer(lastCheckedName);
-        if (layerExists) {
-          // Layer exists, toggle visibility
-          cMap.setLayoutProperty(lastCheckedName, 'visibility', isVisible ? 'visible' : 'none');
-        } else if (isVisible && cMap.isStyleLoaded()) {
-          // Layer doesn't exist but checkbox is checked - create it
-          // MapServer layers are typically public - don't pass token unless service requires it
-          addMapServerRaster(cMap, layer.layer_url, lastCheckedName, null);
+      matchingLayers.forEach((layer: any) => {
+        try {
+          cMap.setLayoutProperty(
+            layer.id,
+            'visibility',
+            newVisibleLayers[lastCheckedName] ? 'visible' : 'none'
+          );
+        } catch (e) {
+          // Layer might not exist yet
         }
-      } else {
-        // FeatureServer - ESRI styles create layers with prefixed IDs (e.g., "layer_name-circle", "layer_name-fill")
-        // Check for any layer starting with the layer name
-        const allLayers = cMap.getStyle().layers || [];
-        const matchingLayers = allLayers.filter((l: any) => 
-          l.id === lastCheckedName || l.id.startsWith(`${lastCheckedName}-`)
-        );
-        
-        if (matchingLayers.length > 0) {
-          // Layers exist, toggle visibility on all matching layers
-          matchingLayers.forEach((layer: any) => {
-            try {
-              cMap.setLayoutProperty(layer.id, 'visibility', isVisible ? 'visible' : 'none');
-            } catch (e) {
-              // Layer might not support visibility property
-            }
-          });
-        } else if (isVisible && cMap.isStyleLoaded()) {
-          // Layer doesn't exist but checkbox is checked - create it
-          // Check if service already exists (might have been created but failed)
-          const existingService = featureServiceRefs.current.get(layer.layer_name);
-          if (!existingService) {
-            let sourceID = layer.layer_name;
-            // @ts-ignore
-            const service = new FeatureService(sourceID, cMap, {
-              name: sourceID,
-              useStaticZoomLevel: false,
-              setAttributionFromService: false,
-              url: layer.layer_url,
-              tiles: [],
-              token: null, // Start with no token - will be set via login modal if needed
-              applyEsriStyles: true, // Use ESRI renderer styles
-              onAuthError: (error: EsriAuthError) => {
-                handleAuthError(error, layer.layer_name, layer.layer_url);
-              },
-            });
-            // Store service reference for token updates
-            featureServiceRefs.current.set(layer.layer_name, service);
-            service.enableRequests();
-          }
-        }
+      });
+    }
+
+    if (lastCheckedName in props.toc?.onToggleVisible) {
+      props.toc?.onToggleVisible[lastCheckedName]();
+    }
+  };
+
+  // Function to fetch service metadata for legend
+  const fetchServiceMetadataForLegend = async (layerName: string) => {
+    // Check if metadata already exists (use ref, not state)
+    if (serviceMetadataRef.current.has(layerName)) {
+      return;
+    }
+
+    const layer = displayedCustomLayerList.find((l) => l.layer_name === layerName);
+    if (!layer) return;
+
+    // Check if it's a FeatureServer (not MapServer - MapServers don't have legends)
+    const isMapServer = /\/MapServer(\/\d+)?$/i.test(layer.layer_url) && !/FeatureServer/i.test(layer.layer_url);
+    if (isMapServer) return;
+
+    // Check if service already exists
+    let service = featureServiceRefs.current.get(layerName);
+    
+    if (!service && mapRef.current) {
+      const cMap = mapRef.current.getMap();
+      if (cMap && cMap.isStyleLoaded()) {
+        // Create service instance to fetch metadata (even if layer not visible)
+        let sourceID = layer.layer_name;
+        // @ts-ignore
+        service = new FeatureService(sourceID, cMap, {
+          name: sourceID,
+          useStaticZoomLevel: false,
+          setAttributionFromService: false,
+          url: layer.layer_url,
+          tiles: [],
+          token: null, // Start with no token - will be set via login modal if needed
+          applyEsriStyles: false, // Don't apply styles, just fetch metadata
+          onAuthError: (error: EsriAuthError) => {
+            handleAuthError(error, layer.layer_name, layer.layer_url);
+          },
+        });
+        featureServiceRefs.current.set(layer.layer_name, service);
+        service.enableRequests();
       }
     }
 
-    if (lastCheckedName in props.toc?.onToggleVisible)
-      props.toc?.onToggleVisible[lastCheckedName]();
+    // Wait for metadata to load (it's fetched async)
+    if (service) {
+      const checkMetadata = (attempts = 0) => {
+        const layerJson = service.getLayerJson();
+        if (layerJson) {
+          serviceMetadataRef.current.set(layerName, layerJson);
+          setLegendVersion((v) => v + 1);
+        } else if (attempts < 10) {
+          // Retry up to 10 times (5 seconds total)
+          setTimeout(() => checkMetadata(attempts + 1), 500);
+        }
+      };
+      checkMetadata();
+    }
   };
 
   // This is the prop legendItems for <TableOfContents />
   const legendItems = {
     colors: { ...colors, ...props.toc.extendedColors },
     keys: props.toc?.keys,
-    visible: { ...props.toc?.visible },
+    visible: { ...visibleLayers },
     expanded: props.toc?.expanded,
     gislayers: props.enableCustomGISLayers ? displayedCustomLayerList : [],
+    serviceMetadata: serviceMetadataRef.current,
+    legendVersion: legendVersion, // Include to trigger re-render when legend loads
+    onExpand: fetchServiceMetadataForLegend,
   };
 
   /***************************************************************************
    * ESRI Authentication Functions
    ***************************************************************************/
   
+  const clearAuthState = () => {
+    setAuthModalOpen(false);
+    setAuthLayerUrl(null);
+    setAuthLayerName(null);
+    setAuthUsername('');
+    setAuthPassword('');
+    setAuthError(null);
+  };
+
   const handleAuthError = (error: EsriAuthError, layerName: string, layerUrl: string) => {
     setAuthLayerUrl(layerUrl);
     setAuthLayerName(layerName);
@@ -302,94 +363,103 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
     try {
       const token = await FeatureService.generateEsriToken(authLayerUrl, authUsername.trim(), authPassword.trim());
       
-      // Update token on the FeatureService instance if it exists
       const service = featureServiceRefs.current.get(authLayerName || '');
       if (service) {
         service.setToken(token);
       }
       
-      // Close modal and clear state
-      setAuthModalOpen(false);
-      setAuthLayerUrl(null);
-      setAuthLayerName(null);
-      setAuthUsername('');
-      setAuthPassword('');
-      setAuthError(null);
+      // Update MapServer token if this is a MapServer layer
+      const mapServerInfo = mapServerLayers.current.get(authLayerName || '');
+      if (mapServerInfo) {
+        mapServerInfo.token = token;
+      }
+      
+      clearAuthState();
     } catch (err: any) {
       setAuthError(err.message || 'Authentication failed. Please check your credentials and try again.');
-      setAuthPassword(''); // Clear password on error
+      setAuthPassword('');
+      
+      // Uncheck the layer on failed authentication
+      if (authLayerName) {
+        setVisibleLayers((prev) => {
+          const newVisible = { ...prev };
+          newVisible[authLayerName] = false;
+          return newVisible;
+        });
+        
+        // Hide the layer on the map if it exists
+        if (mapRef.current) {
+          const cMap = mapRef.current.getMap();
+          if (cMap && cMap.isStyleLoaded()) {
+            // Hide MapServer layer if it exists
+            const mapServerLayer = cMap.getLayer(authLayerName);
+            if (mapServerLayer) {
+              cMap.setLayoutProperty(authLayerName, 'visibility', 'none');
+            }
+            
+            // Hide FeatureServer layers (prefixed IDs)
+            const allLayers = cMap.getStyle().layers || [];
+            const matchingLayers = allLayers.filter((l: any) => 
+              l.id === authLayerName || l.id.startsWith(`${authLayerName}-`)
+            );
+            matchingLayers.forEach((layer: any) => {
+              try {
+                cMap.setLayoutProperty(layer.id, 'visibility', 'none');
+              } catch (e) {
+                // Layer might not support visibility property
+              }
+            });
+          }
+        }
+        
+        // Remove from tracking maps
+        mapServerLayers.current.delete(authLayerName);
+      }
     } finally {
       setAuthLoading(false);
     }
   };
 
   const handleAuthCancel = () => {
-    setAuthModalOpen(false);
-    setAuthLayerUrl(null);
-    setAuthLayerName(null);
-    setAuthUsername('');
-    setAuthPassword('');
-    setAuthError(null);
+    // Uncheck the layer if user cancels authentication
+    if (authLayerName) {
+      // Uncheck the layer directly - simple
+      setVisibleLayers((prev) => {
+        const newState = { ...prev };
+        newState[authLayerName] = false;
+        return newState;
+      });
+      
+      // Hide the layer on the map
+      if (mapRef.current) {
+        const cMap = mapRef.current.getMap();
+        if (cMap && cMap.isStyleLoaded()) {
+          const mapServerLayer = cMap.getLayer(authLayerName);
+          if (mapServerLayer) {
+            cMap.setLayoutProperty(authLayerName, 'visibility', 'none');
+          }
+          const allLayers = cMap.getStyle().layers || [];
+          const matchingLayers = allLayers.filter((l: any) => 
+            l.id === authLayerName || l.id.startsWith(`${authLayerName}-`)
+          );
+          matchingLayers.forEach((layer: any) => {
+            try {
+              cMap.setLayoutProperty(layer.id, 'visibility', 'none');
+            } catch (e) {
+              // Ignore errors
+            }
+          });
+        }
+      }
+      mapServerLayers.current.delete(authLayerName);
+    }
+    
+    clearAuthState();
   };
 
   /***************************************************************************
    * Map Functions
    ***************************************************************************/
-
-  // Helper function to add MapServer as raster layer
-  const addMapServerRaster = (cMap: MapboxGL.Map, msUrl: string, layerId: string, token: string | null = null) => {
-    // Check if already exists
-    if (cMap.getLayer(layerId) && cMap.getSource(layerId)) {
-      return; // Already added, skip
-    }
-
-    const rawUrl = String(msUrl).replace(/\/+$/, '');
-    // Detect if a specific layer is referenced (/MapServer/27)
-    const layerMatch = rawUrl.match(/\/MapServer\/(\d+)$/i);
-    const baseUrl = layerMatch ? rawUrl.replace(/\/\d+$/, '') : rawUrl;
-    const layerParam = layerMatch ? `&layers=show:${layerMatch[1]}` : '';
-    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
-    const tileTemplate =
-      `${baseUrl}/export` +
-      '?bbox={bbox-epsg-3857}' +
-      '&bboxSR=3857&imageSR=3857' +
-      '&size=256,256&format=png&transparent=true&f=image' +
-      layerParam +
-      tokenParam;
-
-    // Remove existing if same id (clean up any partial state)
-    if (cMap.getLayer(layerId)) {
-      try { cMap.removeLayer(layerId); } catch {}
-    }
-    if (cMap.getSource(layerId)) {
-      try { cMap.removeSource(layerId); } catch {}
-    }
-
-    // Wait for map to be ready
-    if (!cMap.isStyleLoaded()) {
-      cMap.once('styledata', () => {
-        addMapServerRaster(cMap, msUrl, layerId, token);
-      });
-      return;
-    }
-
-    try {
-      cMap.addSource(layerId, {
-        type: 'raster',
-        tiles: [tileTemplate],
-        tileSize: 256
-      });
-
-      cMap.addLayer({
-        id: layerId,
-        type: 'raster',
-        source: layerId,
-        paint: {}
-      });
-    } catch (error) {
-      console.error(`Failed to add MapServer layer ${layerId}:`, error);
-    }
-  };
 
   useEffect(() => {
     // This useEffect adds all the custom layers to the map
@@ -400,7 +470,7 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
     const handleStyleData = () => {
       displayedCustomLayerList.forEach((layer) => {
         // Only create layer if checkbox is checked (use visibleLayers state)
-        if (!visibleLayers || !visibleLayers[layer.layer_name]) {
+        if (!visibleLayers[layer.layer_name]) {
           return;
         }
         
@@ -413,7 +483,10 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
           const sourceExists = cMap.getSource(layer.layer_name);
           if (!layerExists && !sourceExists) {
             // MapServer layers are typically public - don't pass token unless service requires it
-            addMapServerRaster(cMap, layer.layer_url, layer.layer_name, null);
+            const token = null; // Start with no token - will be set via login modal if needed
+            addMapServerRaster(cMap, layer.layer_url, layer.layer_name, token);
+            // Store MapServer layer info for click handling
+            mapServerLayers.current.set(layer.layer_name, { url: layer.layer_url, token });
           }
         } else {
           // Check if any layer with this source exists (ESRI styles create prefixed layer IDs)
@@ -452,7 +525,11 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
     return () => {
       cMap.off('styledata', handleStyleData);
     };
-  }, [mapRef.current, displayedCustomLayerList, visibleLayers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapRef.current, displayedCustomLayerList]); // Removed visibleLayers - layer creation handled in toggleVisible
+
+  // Note: ESRI layer click handling is done via DeckGL onClick handler below
+  // No separate Mapbox click handler needed since DeckGL intercepts clicks
 
   const { layerData } = props;
 
@@ -463,7 +540,7 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
 
     // When the TOC is enabled, check if the layer is visible or
     // default to true
-    const tocVisibility = visibleLayers ? visibleLayers[data.id] : true;
+    const tocVisibility = visibleLayers[data.id] ?? true;
 
     /*  Overwrite visible if the property is already set, else it is
         managed by the TOC
@@ -489,6 +566,15 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
             props.customOnMapPointClick(e.object);
           }
           if (!Object.hasOwn(e.object, 'geometry')) return;
+
+          // Don't show popup for DeckGL layers when ESRI layers are present
+          // ESRI layers are handled by the DeckGL onClick handler below
+          if (mapRef.current) {
+            const esriSourceIds = Array.from(featureServiceRefs.current.values()).map((s: any) => s.sourceId);
+            if (esriSourceIds.length > 0) {
+              return; // ESRI handler will manage popups
+            }
+          }
 
           if (mapRef.current.getMap().getZoom() <= 15) {
             flyToLocation([e.object.geometry.coordinates[0], e.object.geometry.coordinates[1]])
@@ -575,7 +661,6 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
       <Typography
         sx={{
           fontSize: '20px',
-          fontFamily: 'Nunito, sans-serif',
           marginLeft: '12px',
         }}
         component="div"
@@ -586,6 +671,128 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
   );
 
   const multiSelectModeEnabled = isMultiSelecting && !props.disableMultiselect;
+
+  /***************************************************************************
+   * Click Handlers
+   ***************************************************************************/
+
+  const handleMapServerClick = async (
+    info: any,
+    cMap: MapboxGL.Map,
+    mapServerInfo: { url: string; token: string | null },
+    layerId: string
+  ): Promise<{ geometry: { coordinates: number[] }; properties: { content: React.ReactElement } } | null> => {
+    const lng = info.coordinate[0];
+    const lat = info.coordinate[1];
+    
+    const result = await queryMapServer(mapServerInfo.url, lng, lat, mapServerInfo.token);
+    
+    if (result.error) {
+      if (isAuthError(result.error)) {
+        const layer = displayedCustomLayerList.find((l) => l.layer_name === layerId);
+        if (layer) {
+          handleAuthError(
+            new EsriAuthError('Authentication required. Please login to access this ESRI service.', mapServerInfo.url),
+            layerId,
+            mapServerInfo.url
+          );
+        }
+      }
+      return null;
+    }
+    
+    if (!result.features || result.features.length === 0) {
+      return null;
+    }
+    
+    const feature = result.features[0];
+    const attributes = feature.attributes || {};
+    const popupContent = formatSimplePopup(attributes, null);
+    
+    if (!popupContent) {
+      return null;
+    }
+    
+    return {
+      geometry: { coordinates: [lng, lat] },
+      properties: { content: popupContent }
+    };
+  };
+
+  const handleFeatureServerClick = (
+    info: any,
+    cMap: MapboxGL.Map,
+    esriServices: FeatureService[]
+  ): { geometry: { coordinates: number[] }; properties: { content: React.ReactElement } } | null => {
+    const esriSourceIds = esriServices.map((s: any) => s.sourceId);
+    const allLayers = cMap.getStyle().layers || [];
+    const esriLayerIds: string[] = [];
+    
+    for (const layer of allLayers) {
+      try {
+        const layerObj = cMap.getLayer(layer.id);
+        if (layerObj?.source && esriSourceIds.includes(layerObj.source)) {
+          esriLayerIds.push(layer.id);
+        }
+      } catch (e) {
+        // Skip invalid layers
+      }
+    }
+    
+    if (esriLayerIds.length === 0) {
+      return null;
+    }
+    
+    // Query features at click point with tolerance for easier clicking (especially lines)
+    // Create a small bounding box in screen coordinates around the click point
+    const tolerancePixels = 15;
+    const point = cMap.project([info.coordinate[0], info.coordinate[1]]);
+    
+    // Create bounding box in screen/pixel coordinates
+    const bbox = [
+      [point.x - tolerancePixels, point.y - tolerancePixels],
+      [point.x + tolerancePixels, point.y + tolerancePixels]
+    ];
+    
+    const features = cMap.queryRenderedFeatures(bbox, {
+      layers: esriLayerIds
+    });
+    
+    if (features.length === 0) {
+      return null;
+    }
+    
+    const feature = features[0];
+    if (!esriSourceIds.includes(feature.source)) {
+      return null;
+    }
+    
+    const service = esriServices.find((s: any) => s.sourceId === feature.source);
+    if (!service) {
+      return null;
+    }
+    
+    const servicePopupInfo = (service as any).getPopupInfo?.();
+    const displayField = (service as any).getDisplayField?.();
+    let popupContent: React.ReactElement | null = null;
+    
+    if (servicePopupInfo && feature.properties) {
+      popupContent = formatEsriPopup(feature, servicePopupInfo, displayField);
+    }
+    
+    if (!popupContent && feature.properties) {
+      popupContent = formatSimplePopup(feature.properties, displayField);
+    }
+    
+    if (!popupContent) {
+      return null;
+    }
+    
+    return {
+      geometry: { coordinates: [info.coordinate[0], info.coordinate[1]] },
+      properties: { content: popupContent }
+    };
+  };
 
   return (
     <>
@@ -607,6 +814,70 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
             pickable={true}
             ContextProvider={MapContext.Provider}
             getCursor={() => (multiSelectModeEnabled ? 'copy' : 'grab')}
+            onClick={async (info) => {
+              if (!mapRef.current || !info.coordinate) {
+                setPopupInfo(null);
+                return;
+              }
+              
+              const cMap = mapRef.current.getMap();
+              if (!cMap || !cMap.isStyleLoaded()) {
+                setPopupInfo(null);
+                return;
+              }
+              
+              try {
+                // Check for MapServer layers first (raster layers need Query service)
+                const mapServerEntries = Array.from(mapServerLayers.current.entries());
+                if (mapServerEntries.length > 0) {
+                  // Check if click is on any MapServer layer
+                  // Use bounding box for consistent tolerance with FeatureServer layers
+                  const tolerancePixels = 15;
+                  const point = cMap.project([info.coordinate[0], info.coordinate[1]]);
+                  const bbox = [
+                    [point.x - tolerancePixels, point.y - tolerancePixels],
+                    [point.x + tolerancePixels, point.y + tolerancePixels]
+                  ];
+                  const clickedLayers = cMap.queryRenderedFeatures(bbox);
+                  
+                  const mapServerLayerIds = mapServerEntries.map((entry) => (entry as [string, { url: string; token: string | null }])[0]);
+                  const clickedMapServerLayer = clickedLayers.find((f: any) => 
+                    mapServerLayerIds.includes(f.layer?.id)
+                  );
+                  
+                  if (clickedMapServerLayer) {
+                    const layerId = clickedMapServerLayer.layer?.id;
+                    const mapServerInfo = mapServerLayers.current.get(layerId);
+                    
+                    if (mapServerInfo) {
+                      const popupData = await handleMapServerClick(info, cMap, mapServerInfo, layerId);
+                      if (popupData) {
+                        setPopupInfo(popupData);
+                      } else {
+                        setPopupInfo(null);
+                      }
+                      return;
+                    }
+                  }
+                }
+                
+                // Handle FeatureServer layers
+                const esriServices = Array.from(featureServiceRefs.current.values());
+                if (esriServices.length === 0) {
+                  setPopupInfo(null);
+                  return;
+                }
+                
+                const popupData = handleFeatureServerClick(info, cMap, esriServices);
+                if (popupData) {
+                  setPopupInfo(popupData);
+                } else {
+                  setPopupInfo(null);
+                }
+              } catch (error) {
+                setPopupInfo(null);
+              }
+            }}
             // If CASTMap's tooltip prop is passed it will add the `getTooltip` prop to DeckGL
             {...(props.tooltip && {
               onHover: async (info) => {
@@ -620,14 +891,49 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
               onViewStateChange: props.onViewStateChange,
             })}
           >
-            {popupInfo && props.popup && (
+            {popupInfo && (
               <Popup
                 anchor="left"
                 longitude={Number(popupInfo.geometry.coordinates[0])}
                 latitude={Number(popupInfo.geometry.coordinates[1])}
                 onClose={() => setPopupInfo(null)}
+                closeButton={true}
+                closeOnClick={false}
+                closeOnMove={false}
+                maxWidth="300px"
               >
-                {props.popup(popupInfo?.properties ?? popupInfo)}
+                {popupInfo.properties?.content ? (
+                  <div 
+                    style={{ 
+                      maxWidth: '280px',
+                      maxHeight: '400px',
+                      overflowY: 'auto',
+                      overflowX: 'hidden',
+                      padding: '12px 12px 12px 12px', 
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                      boxSizing: 'border-box',
+                      paddingRight: '24px' // Space for scrollbar, close button is positioned by Mapbox
+                    }}
+                  >
+                    {popupInfo.properties.content}
+                  </div>
+                ) : props.popup ? (
+                  <div style={{ maxWidth: '280px', maxHeight: '400px', overflowY: 'auto', padding: '12px 16px' }}>
+                    {props.popup(popupInfo?.properties ?? popupInfo)}
+                  </div>
+                ) : (
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    maxWidth: '280px', 
+                    maxHeight: '400px', 
+                    overflowY: 'auto',
+                    fontSize: '14px',
+                    lineHeight: '1.6'
+                  }}>
+                    {JSON.stringify(popupInfo.properties || popupInfo, null, 2)}
+                  </div>
+                )}
               </Popup>
             )}
             {hoverInfo && hoverInfo.object && props.tooltip && (
@@ -695,72 +1001,18 @@ export const CASTMap: React.FC<CASTMapProps> = (props: CASTMapProps) => {
       )}
       <BaseMapSelector basemap={basemap} setBasemap={setBasemap} />
       
-      {/* ESRI Authentication Modal */}
-      <Dialog open={authModalOpen} onClose={handleAuthCancel} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          🔐 ESRI Service Authentication Required
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {authLayerName && `Layer: ${authLayerName}`}
-            <br />
-            Sign in with your ArcGIS credentials to access this secure layer.
-          </Typography>
-          
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Username"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={authUsername}
-            onChange={(e) => setAuthUsername(e.target.value)}
-            disabled={authLoading}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !authLoading) {
-                handleAuthLogin();
-              }
-            }}
-            sx={{ mb: 2 }}
-          />
-          
-          <TextField
-            margin="dense"
-            label="Password"
-            type="password"
-            fullWidth
-            variant="outlined"
-            value={authPassword}
-            onChange={(e) => setAuthPassword(e.target.value)}
-            disabled={authLoading}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !authLoading) {
-                handleAuthLogin();
-              }
-            }}
-            sx={{ mb: 1 }}
-          />
-          
-          {authError && (
-            <Typography variant="body2" color="error" sx={{ mt: 1, mb: 1 }}>
-              {authError}
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleAuthCancel} disabled={authLoading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleAuthLogin} 
-            variant="contained" 
-            disabled={authLoading || !authUsername.trim() || !authPassword.trim()}
-          >
-            {authLoading ? 'Authenticating...' : 'Login'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <EsriAuthModal
+        open={authModalOpen}
+        layerName={authLayerName}
+        username={authUsername}
+        password={authPassword}
+        error={authError}
+        loading={authLoading}
+        onUsernameChange={setAuthUsername}
+        onPasswordChange={setAuthPassword}
+        onLogin={handleAuthLogin}
+        onCancel={handleAuthCancel}
+      />
       
       {!props.disableMultiselect && (
         <div

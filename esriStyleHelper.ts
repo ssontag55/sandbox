@@ -484,6 +484,12 @@ function sanitizeId(s: any) {
     .replace(/^-+|-+$/g, '');
 }
 
+/**
+ * Parse visual variables from ESRI renderer
+ * TODO: Currently a stub - visual variables (size, color, opacity by attribute) are not yet implemented
+ * @param _visualVariables - Array of visual variable definitions (unused for now)
+ * @returns Empty object - visual variables are not yet supported
+ */
 function parseVisualVariables(_visualVariables?: any[]) {
   return {};
 }
@@ -560,12 +566,10 @@ export function generateLegendHtml(layerJson: EsriLayerJson & { name?: string })
 
   if (items.length === 0) return null;
 
-  let html = '<div class="esri-legend" style="background:#fff; padding:12px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.15); font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; font-size:13px; max-width:200px;">';
+  let html = '<div class="esri-legend" style="background:#fff; padding-top: 9px;margin-left: -22px; border-radius:8px; font-size:13px; max-width:200px;">';
   
-  // Add title if available
-  if ((layerJson as any).name) {
-    html += `<div style="font-weight:600; margin-bottom:8px; color:#1a1a1a; border-bottom:1px solid #e0e0e0; padding-bottom:6px;">${escapeHtml((layerJson as any).name)}</div>`;
-  }
+  // No title - removed layer name from legend
+  // No drop shadow - removed box-shadow
 
   html += '<div style="display:flex; flex-direction:column; gap:6px;">';
   
@@ -646,4 +650,3 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
-
