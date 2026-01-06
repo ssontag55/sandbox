@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Card from '@mui/material/Card';
 import { Fab, Typography } from '@mui/material';
 import ArrowBackIosNewOutlinedIcon from '@mui/icons-material/ArrowBackIosNewOutlined';
@@ -35,12 +35,21 @@ const TableOfContents = (props: Props) => {
   const visible = props.legendItems.visible || {};
   const serviceMetadata = (props.legendItems as any).serviceMetadata as Map<string, any> | undefined;
   
-  // Build nodes - they rebuild when legend loads (for legend updates)
-  // The LegendContent component will re-render when layerJson prop changes
-  const gisLayers = props.legendItems.gislayers.map((layer) => 
-    buildGisLayerTocNode(layer, serviceMetadata?.get(layer.layer_name))
+  // Memoize nodes - rebuild when layer list OR metadata loads (for legend), but keep references stable otherwise
+  const layerListKey = props.legendItems.gislayers.map((l) => l.layer_name).join(',');
+  const metadataLoadedKey = props.legendItems.gislayers
+    .filter((l) => /FeatureServer/i.test(l.layer_url || ''))
+    .map((l) => (serviceMetadata?.has(l.layer_name) ? '1' : '0'))
+    .join('');
+
+  const gisLayers = useMemo(
+    () =>
+      props.legendItems.gislayers.map((layer) =>
+        buildGisLayerTocNode(layer, serviceMetadata?.get(layer.layer_name))
+      ),
+    [layerListKey, metadataLoadedKey]
   );
-  const nodes = [...customLayers, ...gisLayers];
+  const nodes = useMemo(() => [...customLayers, ...gisLayers], [customLayers, gisLayers]);
   
   // Calculate checked array - ensure it includes all visible GIS layers
   const checked = [
